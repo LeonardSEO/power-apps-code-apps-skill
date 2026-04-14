@@ -7,6 +7,16 @@
 - npm CLI for the current happy path
 - PAC CLI for auth, data-source operations, and compatibility paths
 
+## Preflight
+Before starting, collect:
+- environment id
+- Dataverse enabled: yes or no
+- backend host
+- blob host if direct uploads exist
+- auth model
+- direct `fetch()` versus connector
+- runtime storage truth
+
 ## New app bootstrap
 Use the official Microsoft template first.
 

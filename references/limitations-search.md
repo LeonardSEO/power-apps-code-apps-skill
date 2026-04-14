@@ -20,19 +20,24 @@ Start here:
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/overview
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/architecture
+- https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/content-security-policy
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/npm-quickstart
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-data
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-dataverse
+- https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/add-dataverse-action-function
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/sharepoint-operations
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-copilot-studio
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/create-basic-asset-management-api-azure-functions
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/alm
+- https://learn.microsoft.com/en-us/power-apps/developer/code-apps/troubleshoot-add-datasource
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/system-limits-configuration
 - https://learn.microsoft.com/en-us/power-platform/developer/cli/introduction
 - https://learn.microsoft.com/en-us/connectors/custom-connectors/create-custom-connector-aad-protected-azure-functions
 - https://learn.microsoft.com/en-us/connectors/custom-connectors/use-custom-connector-powerapps
 - https://learn.microsoft.com/en-us/power-apps/maker/data-platform/create-connection-reference
 - https://learn.microsoft.com/en-us/power-apps/developer/data-platform/custom-api
+- https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/create-update-entity-definitions-using-web-api
+- https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/overview
 
 ## Search behavior
 - Use Microsoft Learn first for facts about commands, support, and limitations.
@@ -46,4 +51,6 @@ Start here:
 - custom auth requirements inside the app,
 - mobile app support,
 - connector schema refresh commands that do not exist,
-- Dataverse generated-service support for unsupported features such as FetchXML or actions and functions.
+- universal one-command Dataverse schema creation via PAC CLI alone,
+- Dataverse generated-service support for unsupported classic PAC features such as FetchXML,
+- or blanket statements about Dataverse actions and functions without checking whether the user is on the latest npm CLI preview flow.

@@ -19,6 +19,11 @@ Use direct browser HTTP only when all of the following are true:
 - the user accepts that the request surface is visible in the browser,
 - the data is not sensitive enough to require a stronger boundary.
 
+In Code Apps, “CORS is solved” is usually not enough by itself. Validate all browser-facing layers:
+- Power Apps Code Apps CSP,
+- backend CORS,
+- and any storage CORS used for direct uploads.
+
 ## Recommended backend pattern
 For real backend logic, protected APIs, or sensitive evaluation:
 

@@ -27,6 +27,8 @@ If the schema changes on the connection, there is currently no typed-model refre
 ## Dataverse
 Use Dataverse when you want platform-native storage, security, solution support, and clean ALM.
 
+For environment creation, schema deployment, Web API metadata, generated services, and backend access patterns, read [dataverse-provisioning.md](dataverse-provisioning.md).
+
 Add a table:
 
 ```bash
@@ -58,11 +60,14 @@ await AccountsService.delete("<guid>");
 
 Current unsupported scenarios include:
 - polymorphic lookups,
-- Dataverse actions and functions from generated services,
 - FetchXML,
 - alternate keys,
 - deleting Dataverse data sources via PAC CLI,
 - schema metadata CRUD.
+
+Nuance:
+- classic `pac code add-data-source` still does not do schema definition CRUD,
+- the latest npm CLI has a preview path for some Dataverse actions and functions via `find-dataverse-api` and `add-dataverse-api`.
 
 ## SharePoint
 What is supported well:
@@ -128,3 +133,4 @@ This keeps the code app portable across environments.
 - Avoid `getAll()` on large data sets unless the data set is genuinely small.
 - Avoid loops that trigger N connector calls.
 - Keep the client thin. Put authoritative or expensive rules elsewhere.
+- If the backend, not the client, is the true owner of persistence, say that explicitly and avoid duplicating write paths in both places.

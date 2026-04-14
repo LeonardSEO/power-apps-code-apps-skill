@@ -20,7 +20,9 @@ It is designed for AI vibecoding workflows where the model needs to understand:
 - TypeScript, Vite, and `@microsoft/power-apps` defaults
 - npm CLI and PAC CLI usage
 - Local Play and browser gotchas
+- CSP, CORS, white-screen, caching, and runtime-state troubleshooting
 - Dataverse integration
+- Dataverse provisioning, solution import, and Web API metadata fallback
 - SharePoint boundaries
 - Copilot Studio agent integration
 - Connection references and ALM
@@ -35,9 +37,11 @@ power-apps-code-apps-skill/
 ├── SKILL.md
 └── references/
     ├── backend-security.md
+    ├── dataverse-provisioning.md
     ├── data-integrations.md
     ├── limitations-search.md
-    └── runbook.md
+    ├── runbook.md
+    └── troubleshooting.md
 ```
 
 ## Install
