@@ -1,8 +1,21 @@
 # Data and Integrations
 
+## Connector-first rule
+
+Code Apps run inside the Power Apps sandbox. The sandbox blocks arbitrary outbound HTTP — only connector-proxied calls reach external services.
+
+| MUST NOT | MUST |
+|---|---|
+| `fetch("https://graph.microsoft.com/...")` | Use `/add-office365`, `/add-sharepoint`, or `/add-dataverse` |
+| `axios.get("https://dev.azure.com/...")` | Use the corresponding connector skill |
+| Any raw HTTP call to an M365/Azure service | Use a Power Platform connector |
+
+If no connector supports the required functionality, say so explicitly. Do NOT implement a direct API call as a workaround — it will not work in production.
+
 ## Mental model
 Code Apps are connector-first. The usual path is:
-- create or reuse a connection in Power Apps,
+- find or create a connection in Power Apps,
+- get the connection ID with `npx power-apps list-connections`,
 - add the data source to the code app,
 - import the generated model and service,
 - call the generated TypeScript methods.
@@ -14,7 +27,19 @@ Generated files land under:
 Do not edit those files by hand.
 
 ## General connector flow
-Typical PAC pattern:
+Find your connection ID first:
+
+```bash
+npx power-apps list-connections
+```
+
+Then add the data source (npm CLI, preferred):
+
+```bash
+npx power-apps add-data-source -a <apiId> -c <connectionId> [-d <dataset>] [-t <table>]
+```
+
+PAC CLI fallback:
 
 ```bash
 pac auth create
@@ -23,6 +48,13 @@ pac code add-data-source -a <apiId> -c <connectionId> ...
 ```
 
 If the schema changes on the connection, there is currently no typed-model refresh command. Delete the data source and add it again.
+
+To discover datasets and tables before adding:
+
+```bash
+npx power-apps list-datasets -a <apiId> -c <connectionId>
+npx power-apps list-tables -a <apiId> -c <connectionId> -d <dataset>
+```
 
 ## Dataverse
 Use Dataverse when you want platform-native storage, security, solution support, and clean ALM.

@@ -9,7 +9,8 @@
 
 ## Preflight checklist
 Collect these facts before building or debugging:
-- environment id
+- Node.js 22+ (`node --version` — required, v22 minimum)
+- environment id (GUID from make.powerapps.com URL)
 - Code App id if it already exists
 - Dataverse enabled: yes or no
 - Dataverse org URL
@@ -22,6 +23,20 @@ Collect these facts before building or debugging:
 - runtime storage truth: Dataverse, Blob, SQL, in-memory, or mixed
 
 If any of these are unknown, say so explicitly before the implementation starts.
+
+## Build failure recovery
+
+| Error | Fix |
+|---|---|
+| TS6133 (unused import) | Remove the unused import and retry once |
+| TS2322 / other type error | Report the file and line number; fix before deploying |
+| Module not found | Run `npm install` in the project root and retry once |
+| Node.js version error | Upgrade to v22+ or switch with `nvm use 22` |
+| Auth error on push | Run `npx power-apps logout`, then retry — CLI will re-prompt browser login |
+| `environment config does not match` | Update `environmentId` in `power.config.json` to the target environment |
+| `npx power-apps add-data-source` fails | Report exact error; check connection ID with `npx power-apps list-connections` |
+
+Never deploy if `npm run build` has not succeeded in the current session.
 
 ## Release split
 Never collapse these into one imagined deploy step:
