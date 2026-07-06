@@ -28,6 +28,7 @@ It is designed for AI vibecoding workflows where the model needs to understand:
 - Connection references and ALM
 - Backend patterns with Azure Functions, API Management, and custom connectors
 - Platform limitations and what not to do
+- Power Apps Code Apps plan, build, and review agent profiles
 
 ## Repository structure
 ```text
@@ -35,11 +36,16 @@ power-apps-code-apps-skill/
 ├── README.md
 ├── LICENSE
 ├── SKILL.md
+├── agents/
+│   └── openai.yaml
 └── references/
     ├── backend-security.md
+    ├── build-agent.md
     ├── dataverse-provisioning.md
     ├── data-integrations.md
     ├── limitations-search.md
+    ├── plan-agent.md
+    ├── review-agent.md
     ├── runbook.md
     └── troubleshooting.md
 ```

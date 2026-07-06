@@ -1,0 +1,4 @@
+interface:
+  display_name: "Power Apps Code Apps"
+  short_description: "Build, wire, debug, and review Code Apps"
+  default_prompt: "Use $power-apps-code-apps to plan, implement, debug, or review a Power Apps Code App with correct connector-first platform boundaries."
