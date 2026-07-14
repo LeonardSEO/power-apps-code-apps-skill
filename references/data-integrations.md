@@ -15,7 +15,7 @@ If no connector supports the required functionality, say so explicitly. Do NOT i
 ## Mental model
 Code Apps are connector-first. The usual path is:
 - find or create a connection in Power Apps,
-- get the connection ID with `npx power-apps list-connections`,
+- get the connection ID with `power-apps list-connections`,
 - add the data source to the code app,
 - import the generated model and service,
 - call the generated TypeScript methods.
@@ -30,13 +30,13 @@ Do not edit those files by hand.
 Find your connection ID first:
 
 ```bash
-npx power-apps list-connections
+power-apps list-connections
 ```
 
 Then add the data source (npm CLI, preferred):
 
 ```bash
-npx power-apps add-data-source -a <apiId> -c <connectionId> [-d <dataset>] [-t <table>]
+power-apps add-data-source -a <apiId> -c <connectionId> [-d <dataset>] [-t <table>]
 ```
 
 PAC CLI fallback:
@@ -47,13 +47,20 @@ pac env select --environment <environment-id>
 pac code add-data-source -a <apiId> -c <connectionId> ...
 ```
 
-If the schema changes on the connection, there is currently no typed-model refresh command. Delete the data source and add it again.
+If the schema changes on the connection, refresh the generated types — do NOT delete-and-re-add by default:
+
+```bash
+power-apps refresh-data-source                            # refresh all data sources
+power-apps refresh-data-source --data-source-name <name>  # refresh one
+```
+
+`refresh-data-source` exists in the current npm CLI (verified in `0.12.3`). Microsoft Learn still documents "delete and add again"; the installed CLI is ahead of the docs — always verify against `power-apps --help`. To remove a source entirely: `power-apps delete-data-source --api-id <apiId> --data-source-name <name>`.
 
 To discover datasets and tables before adding:
 
 ```bash
-npx power-apps list-datasets -a <apiId> -c <connectionId>
-npx power-apps list-tables -a <apiId> -c <connectionId> -d <dataset>
+power-apps list-datasets -a <apiId> -c <connectionId>
+power-apps list-tables -a <apiId> -c <connectionId> -d <dataset>
 ```
 
 ## Dataverse

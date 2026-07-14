@@ -52,7 +52,7 @@ Use Azure Functions or another backend when you need:
 - baseline or policy logic you do not want bundled into the client.
 
 Important:
-- `npx power-apps push` does not build or deploy Azure Functions.
+- `power-apps push` does not build or deploy Azure Functions.
 - Backend deployment is a separate pipeline or release step.
 
 ## Dataverse server-side logic

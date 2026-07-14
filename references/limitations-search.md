@@ -1,7 +1,7 @@
 # Limitations and Search Rules
 
 ## Important limits and gotchas
-- **Node.js 22+ is required.** `npx power-apps add-data-source` rejects Node 20 and earlier.
+- **Node.js 22+ is required.** `power-apps add-data-source` rejects Node 20 and earlier.
 - **Direct HTTP calls do not work.** The Power Apps sandbox blocks arbitrary outbound fetch/axios calls. Use connector-proxied calls only.
 - Published code is hosted on a publicly accessible endpoint. Do not store sensitive user or organizational data in the app bundle.
 - Code Apps are not supported in the Power Apps mobile app or Power Apps for Windows.

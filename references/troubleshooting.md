@@ -32,11 +32,32 @@ If any of these are unknown, say so explicitly before the implementation starts.
 | TS2322 / other type error | Report the file and line number; fix before deploying |
 | Module not found | Run `npm install` in the project root and retry once |
 | Node.js version error | Upgrade to v22+ or switch with `nvm use 22` |
-| Auth error on push | Run `npx power-apps logout`, then retry — CLI will re-prompt browser login |
+| Auth error on push | Run `power-apps logout`, then retry — CLI will re-prompt browser login |
 | `environment config does not match` | Update `environmentId` in `power.config.json` to the target environment |
-| `npx power-apps add-data-source` fails | Report exact error; check connection ID with `npx power-apps list-connections` |
+| `power-apps add-data-source` fails | Report exact error; check connection ID with `power-apps list-connections` |
+| `Could not find a property named '<field>'` | Schema drift: a generated/hand-written `$select` field is not in the current environment. Use logical names from live metadata; run `power-apps refresh-data-source`; do not copy generated files between branches without re-adding the data source |
+| `Connection reference not found: <name>` | Runtime, not build. The data source is in `power.config.json` but the connection reference is missing/unlinked, or the user lacks runtime permission. Check those two separately |
+| `EADDRINUSE :::8080` or `:5173` | A Local Play port is taken. `lsof -i :8080` to find the owner before killing; Local Play needs both the connection-runtime and Vite ports free |
+| `Launch App failed with Http status code of 0` | Do not hand-build the Local Play URL from an old app id — open the URL the CLI prints |
+| Unexpected consent/login prompt | Often an UNUSED data source/connection still attached to the app (not the one you're building). Inventory used vs unused connections and remove the stragglers |
 
 Never deploy if `npm run build` has not succeeded in the current session.
+
+## Runtime error classification
+A green `npm run build` says nothing about runtime. When Local Play misbehaves, classify the
+**first failing app request in the Network tab** before touching code — most console noise is
+host ruis, not your bug:
+
+| Class | Signal | Where to look |
+|---|---|---|
+| App bug | Your component/logic throws | app stack trace |
+| Connector / generated-service error | 4xx/5xx from a `connectorOperation` | request payload + connection |
+| Connection-reference error | `Connection reference not found` | `power.config.json` + linked reference + user rights |
+| Power Apps host noise | Permissions-Policy, telemetry blocks, React warnings from host code, Office/CDN 403 | ignore — not your app |
+| Browser policy | Local Network Access, third-party cookies | browser profile/settings |
+| CORS / CSP | blocked cross-origin/inline | it's a direct-fetch/architecture smell — go connector-first |
+
+Rule of thumb: follow the first *app* request that fails; do not chase host warnings.
 
 ## Release split
 Never collapse these into one imagined deploy step:
@@ -44,7 +65,7 @@ Never collapse these into one imagined deploy step:
 ### Frontend
 ```bash
 npm run build
-npx power-apps push
+power-apps push
 ```
 
 ### Backend

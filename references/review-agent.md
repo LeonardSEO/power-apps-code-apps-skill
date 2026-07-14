@@ -24,7 +24,7 @@ Check for:
 - UI components importing generated connector services directly.
 - Hand-edited generated files under `src/generated/`.
 - Missing build or lint validation after TypeScript/React changes.
-- `npx power-apps push`, `pac code push`, solution mutations, or publishing without explicit approval and a successful build.
+- `power-apps push`, `pac code push`, solution mutations, or publishing without explicit approval and a successful build.
 - Hardcoded credentials, tokens, tenant ids used as secrets, connection strings, or customer data.
 - Auth changes such as custom MSAL/OAuth flows that bypass the Power Apps host.
 - Unbounded `getAll()` calls or loops that trigger excessive connector calls.

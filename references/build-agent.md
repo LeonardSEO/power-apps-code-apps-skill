@@ -16,7 +16,7 @@ Act as a Power Apps Code Apps implementation agent. Make the smallest defensible
 - Do not use `fetch()`, `axios`, or direct browser HTTP calls to Dataverse, Microsoft 365, Azure, or external services.
 - Do not add custom Entra ID, MSAL, OAuth, or SAML flows unless explicitly requested.
 - Do not change auth, permissions, data deletion, migrations, production settings, or Power Platform solution membership unless explicitly requested.
-- Do not run `npx power-apps push`, `pac code push`, solution import/export mutations, or cloud resource changes without explicit user approval.
+- Do not run `power-apps push`, `pac code push`, solution import/export mutations, or cloud resource changes without explicit user approval.
 - Never write secrets, tokens, credentials, private keys, connection strings, or customer data into files, logs, tests, or docs.
 
 ## Implementation Flow
@@ -29,7 +29,7 @@ Act as a Power Apps Code Apps implementation agent. Make the smallest defensible
    - `npm run lint`
    - `npm run build`
    - `npm run dev`
-   - `npx power-apps run` when runtime host behavior matters
+   - `power-apps run` when runtime host behavior matters
 6. Fix failures caused by your change. Report unrelated failures separately.
 
 ## Final Response

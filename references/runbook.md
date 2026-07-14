@@ -25,7 +25,7 @@ Use the official Microsoft template first.
 npx degit github:microsoft/PowerAppsCodeApps/templates/vite my-app --force
 cd my-app
 npm install
-npx power-apps init -n "My Code App" -e <environment-id>
+power-apps init -n "My Code App" -e <environment-id>
 npm run dev
 ```
 
@@ -61,24 +61,34 @@ Rules:
 - Prefer targeted `overrides` for a known transitive issue instead of repeated `--force` installs.
 - Re-run `npm run build` after dependency changes.
 
-## Local development
+## Local Play (two processes)
+Local Play is NOT just Vite. It needs the Vite frontend AND the Power Apps connection
+runtime running together (that is what `make dev-dataverse`-style scripts wrap):
+
 ```bash
-npm run dev
-# or
-npx power-apps run
+npm run dev                                   # 1) Vite frontend (default :5173)
+power-apps run \                              # 2) Power Apps connection runtime
+  --port 8080 \                               #    connection-runtime port
+  --local-app-url http://localhost:5173       #    where Vite serves the app
 ```
 
-Expected result:
-- Vite starts
-- a `Local Play` URL is printed
-- the app can open inside the Power Apps host
+- `--port` is the connection runtime; `--local-app-url` points at the Vite dev server —
+  two different ports. `power-apps run` does not itself start your Vite app.
+- Let the CLI print the `Local Play` URL and open THAT. Do not hand-build a URL from an
+  old app id — that yields `Launch App failed with Http status code of 0`.
+- Open it in the **same browser profile** as the Power Platform tenant. If it fails in
+  Chrome/Edge, check **Local Network Access** permissions before touching code.
+- `EADDRINUSE :::8080` (or 5173) means the port is taken. Find the owner first
+  (`lsof -i :8080`) before killing anything.
+- A Vite smoke check (page renders) is NOT a Power Apps/connector smoke check (data loads
+  through the runtime). Verify the actual failing request in the Network tab.
 
 ## Publish
 Use the npm CLI path first:
 
 ```bash
 npm run build
-npx power-apps push
+power-apps push
 ```
 
 Fallback when the tenant or workflow still relies on PAC:
@@ -102,26 +112,85 @@ pac code push --solutionName <solutionName>
 
 ## Multiple data sources
 When adding multiple connectors in sequence:
-- Run `npm run build` after each `npx power-apps add-data-source` to catch errors early.
+- Run `npm run build` after each `power-apps add-data-source` to catch errors early.
 - Do NOT deploy after each connector — deploy once after all connectors are wired.
 
-## CLI quick reference
+## Cloud flows (npm CLI only)
+Power Automate flows are wired through the npm CLI; `pac code` cannot do this. A flow is
+only usable when ALL of these hold — check them in order:
+
+1. the flow is solution-aware;
+2. it has a supported Power Apps (manual/`Run`) trigger;
+3. the maker has read rights on the flow AND its underlying connections;
+4. `list-flows` can discover it;
+5. `add-flow` has added the generated types/service/schema + config.
 
 ```bash
-npx power-apps init -n '<app-name>' -e <env-id>          # Initialize, creates power.config.json
-npx power-apps push                                        # Deploy (run npm run build first)
-npx power-apps run                                         # Start local dev server
-npx power-apps add-data-source -a <api> [-c <conn-id>] [-d <dataset>] [-t <table>]
-npx power-apps list-connections                            # List available connections
-npx power-apps list-datasets -a <api> -c <conn-id>        # List datasets for connector
-npx power-apps list-tables -a <api> -c <conn-id> -d <dataset>  # List tables in dataset
-npx power-apps logout                                      # Clear cached auth token
+power-apps list-flows --search "<name>" --json
+power-apps add-flow --flow-id <workflow-id>       # generates typed service + schema, edits power.config.json
+power-apps remove-flow --flow-id <workflow-id>
 ```
+
+After `add-flow`, verify: `power.config.json` (watch for a duplicated `connectionReferences`
+key), `.power/schemas/logicflows/`, the generated service/model, `workflowDetails.dependencies`,
+missing connection references, then build + Local Play. If the flow definition changes, re-run
+`add-flow` with the same id. End users also need runtime permission on the flow. Calling the
+generated flow service is covered in [data-access-contract.md](data-access-contract.md).
+
+## Auth and accounts
+Browser auth happens on first `init`/`push`, but the CLI is multi-account:
+
+```bash
+power-apps login          # add an account (opens browser)
+power-apps auth-status     # show cached accounts; the active one is marked
+power-apps auth-switch     # choose which cached account other commands run as
+power-apps logout          # clears ALL cached accounts — use auth-switch to just change active
+```
+
+## CLI quick reference
+`power-apps` = the project-local binary (`./node_modules/.bin/power-apps`), not bare `npx`
+(see SKILL.md). Read live help with `power-apps --help` / `power-apps <verb> --help`
+(the bare `help` verb is unsupported; `init --help` needs an empty dir). Global flags:
+`--json`, `--non-interactive`, `--no-color`.
+
+```bash
+# App lifecycle
+power-apps init -n '<app-name>' -e <env-id>        # creates power.config.json (needs empty dir)
+power-apps run --port 8080 --local-app-url <url>   # connection runtime for Local Play
+power-apps push [--solution-name <name>]           # deploy (run npm run build first)
+power-apps list-codeapps
+
+# Data sources
+power-apps add-data-source -a <api> [-c <conn-id>] [-d <dataset>] [-t <table>]
+power-apps refresh-data-source [--data-source-name <name>]   # regenerate types (NOT delete+re-add)
+power-apps delete-data-source --api-id <api> --data-source-name <name>
+power-apps add-dataverse-api --api-name <op>       # Custom API / action (flag is --api-name)
+power-apps find-dataverse-api --search "<term>"
+
+# Discovery
+power-apps list-connections
+power-apps list-connection-references
+power-apps list-environment-variables
+power-apps list-datasets -a <api> -c <conn-id>
+power-apps list-tables -a <api> -c <conn-id> -d <dataset>
+power-apps list-sqlStoredProcedures -a <api> -c <conn-id> -d <dataset>
+
+# Connections, flows, auth
+power-apps create-connection --api-id <api> --display-name "<name>"   # preview; SSO vs browser varies
+power-apps list-flows --search "<name>" --json
+power-apps add-flow --flow-id <id>
+power-apps remove-flow --flow-id <id>
+power-apps login | auth-status | auth-switch | logout
+```
+
+> Live CLI help can itself be inconsistent — e.g. `push --help` shows `--solution-id` while
+> the description/example use `--solution-name`. Verify a flag against the installed version;
+> never run a production `push` just to "test" a flag.
 
 ## What not to do
 - Do not start from Next.js or another server-heavy stack unless you already know which parts are purely client-side.
 - Do not treat `power.config.json` as application logic.
 - Do not publish before local play works.
-- Do not assume `npx power-apps push` deploys Azure Functions or any other backend resource.
+- Do not assume `power-apps push` deploys Azure Functions or any other backend resource.
 - Do not use Node.js 20 or earlier — v22+ is required.
 - Do not use `fetch()` or `axios` directly — use generated connector services instead.

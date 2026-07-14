@@ -70,11 +70,11 @@ This generates model and service files under `src/generated/...`.
 Classic PAC data-source flow still skips Dataverse operation schema files. The latest npm CLI has a preview route for Dataverse operations:
 
 ```bash
-npx power-apps find-dataverse-api --search "WhoAmI"
-npx power-apps add-dataverse-api --name <operation-name>
+power-apps find-dataverse-api --search "WhoAmI"
+power-apps add-dataverse-api --api-name <operation-name>   # flag is --api-name (NOT --name)
 ```
 
-Treat this as newer platform surface area and verify the generated files before you rely on it.
+Treat this as newer platform surface area and verify the generated files before you rely on it. This is the sanctioned route for calling a Custom API / action (e.g. an atomic server-side operation) from the app; the generated service is invoked like any other generated service.
 
 ## What not to claim
 - Do not claim a single PAC CLI flow can always create every custom Dataverse table and column from zero.
