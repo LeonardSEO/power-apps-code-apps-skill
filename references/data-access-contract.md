@@ -7,7 +7,7 @@ and never hand-edit generated files.
 
 ## Generated Dataverse service surface
 
-Every generated `Ths_xService` / `AccountsService` exposes the same shape:
+Every generated `<Table>Service` / `AccountsService` exposes the same shape:
 
 ```ts
 create(record)                          // → IOperationResult<T>
@@ -33,10 +33,10 @@ if (!res.success || !res.data) throw new Error(formatError(res.error)); // never
   pointing at the **plural entity-set** name:
 
   ```ts
-  await Ths_beheerdagsService.create({
-    ths_titel: 'X',
-    'ths_Klant@odata.bind': `/ths_pdpklantens(${guid})`,   // nav prop + plural set
-  } as Omit<Ths_beheerdagsBase, 'ths_beheerdagid'>);
+  await <Table>Service.create({
+    <prefix>_name: 'X',
+    '<prefix>_Parent@odata.bind': `/<prefix>_parents(${guid})`,   // nav prop + plural set
+  } as Omit<<Table>Base, '<prefix>_<table>id'>);
   ```
 
 - **Read a lookup**: the GUID is on `_<field>_value`; the generated model also declares a
@@ -69,7 +69,7 @@ if (!res.success || !res.data) throw new Error(formatError(res.error)); // never
   `value === undefined ? fallback : value.toFixed(2)` lets `null` through and crashes on
   `.toFixed()`. This is invisible against mock/example data (which naturally omits the key
   rather than nulling it) and only shows up against real rows. Fix once, at the row →
-  domain-object mapping boundary: `amountDue: row.ths_amountdue ?? undefined` for every
+  domain-object mapping boundary: `amount: row.<prefix>_amount ?? undefined` for every
   optional field — not at each call site.
 - **Excluding service/application accounts from a "list people" query**: a plain
   `systemusers` query also returns application users, connector service accounts, and flow

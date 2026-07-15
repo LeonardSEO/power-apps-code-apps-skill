@@ -11,7 +11,7 @@
 - Code snippets for generated services
 - Web API metadata fallback
 - Backend repository pattern
-- RoomMinutes table example
+- Example table set shape for a new domain
 
 ## Auth: device code vs interactive (what actually works)
 `pac auth create --environment <url>` (normal interactive browser MSAL) is the
@@ -38,7 +38,7 @@ Before adding Dataverse to a Code App, lock these decisions first:
 3. Will the frontend use generated services directly, or will the backend own Dataverse access?
 4. Is schema deployment done by solution import, or by Web API metadata automation?
 
-Do not blur these decisions together. In RoomMinutes, the environment had Dataverse and the backend had a Dataverse repository, but runtime persistence still used blob-backed metadata because the feature flag and repository choice resolved that way.
+Do not blur these decisions together. A project can have Dataverse enabled in the environment and a fully implemented Dataverse repository class, while runtime persistence still resolves to blob-backed or in-memory storage because a feature flag or repository-selection wiring resolved that way.
 
 ## What CLI can do directly
 
@@ -80,9 +80,8 @@ This is the supported generated-service flow for tables:
 ```bash
 pac auth create
 pac env select --environment <environment-id>
-pac code add-data-source -a dataverse -t rm_meeting
-pac code add-data-source -a dataverse -t rm_chatmessage
-pac code add-data-source -a dataverse -t rm_useraiprofile
+pac code add-data-source -a dataverse -t <prefix>_table1
+pac code add-data-source -a dataverse -t <prefix>_table2
 ```
 
 This generates model and service files under `src/generated/...`.
@@ -130,7 +129,7 @@ for a first-time registration.
 Use a solution import when the schema is part of a repeatable application release:
 
 ```bash
-pac solution import --path ./roomminutes-dataverse.zip
+pac solution import --path ./<solution-name>-dataverse.zip
 ```
 
 Why this is the safer default:
@@ -356,17 +355,16 @@ the Custom API already works functionally.
 Use the generated services instead of hand-rolled fetches when the Code App itself reads or writes Dataverse data.
 
 ```ts
-import { RmMeetingService } from "./generated/services/RmMeetingService";
-import type { RmMeeting } from "./generated/models/RmMeetingModel";
+import { <Table>Service } from "./generated/services/<Table>Service";
+import type { <Table> } from "./generated/models/<Table>Model";
 
-const created = await RmMeetingService.create({
-  rm_title: "Weekly standup",
-  rm_status: "recording",
-  rm_durationms: 0,
-} as Omit<RmMeeting, "rm_meetingid">);
+const created = await <Table>Service.create({
+  <prefix>_title: "Example title",
+  <prefix>_status: "active",
+} as Omit<<Table>, "<prefix>_<table>id">);
 
-const meetings = await RmMeetingService.getAll({
-  select: ["rm_title", "rm_status", "modifiedon"],
+const rows = await <Table>Service.getAll({
+  select: ["<prefix>_title", "<prefix>_status", "modifiedon"],
   orderBy: ["modifiedon desc"],
   top: 20,
 });
@@ -386,7 +384,7 @@ Create a custom user-owned table inside a solution:
 ```bash
 curl -X POST "$DATAVERSE_WEB_API/EntityDefinitions" \
   -H "Authorization: Bearer $TOKEN" \
-  -H "MSCRM.SolutionUniqueName: roomminutes" \
+  -H "MSCRM.SolutionUniqueName: <solution-unique-name>" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json; charset=utf-8" \
   -H "OData-MaxVersion: 4.0" \
@@ -398,7 +396,7 @@ curl -X POST "$DATAVERSE_WEB_API/EntityDefinitions" \
         "@odata.type": "Microsoft.Dynamics.CRM.StringAttributeMetadata",
         "AttributeType": "String",
         "AttributeTypeName": { "Value": "StringType" },
-        "SchemaName": "rm_Name",
+        "SchemaName": "<prefix>_Name",
         "IsPrimaryName": true,
         "RequiredLevel": {
           "Value": "None",
@@ -424,7 +422,7 @@ curl -X POST "$DATAVERSE_WEB_API/EntityDefinitions" \
       "LocalizedLabels": [
         {
           "@odata.type": "Microsoft.Dynamics.CRM.LocalizedLabel",
-          "Label": "RoomMinutes Meeting",
+          "Label": "<Prefix> Record",
           "LanguageCode": 1033
         }
       ]
@@ -434,7 +432,7 @@ curl -X POST "$DATAVERSE_WEB_API/EntityDefinitions" \
       "LocalizedLabels": [
         {
           "@odata.type": "Microsoft.Dynamics.CRM.LocalizedLabel",
-          "Label": "RoomMinutes Meetings",
+          "Label": "<Prefix> Records",
           "LanguageCode": 1033
         }
       ]
@@ -443,7 +441,7 @@ curl -X POST "$DATAVERSE_WEB_API/EntityDefinitions" \
     "HasNotes": false,
     "IsActivity": false,
     "OwnershipType": "UserOwned",
-    "SchemaName": "rm_Meeting"
+    "SchemaName": "<prefix>_Record"
   }'
 ```
 
@@ -454,11 +452,11 @@ Important:
 - treat this as admin or deployment automation, not as Code App runtime logic.
 
 ## Backend repository pattern
-If the backend owns Dataverse access, use token-based Web API calls from the server. RoomMinutes already follows this pattern:
+If the backend owns Dataverse access, use token-based Web API calls from the server:
 
 ```ts
 const token = await credential.getToken(`${new URL(baseUrl).origin}/.default`);
-const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/data/v9.2/rm_meetings`, {
+const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/data/v9.2/<prefix>_records`, {
   method: "GET",
   headers: {
     Authorization: `Bearer ${token?.token ?? ""}`,
@@ -473,28 +471,24 @@ This is the right place for:
 - systemuser lookup,
 - durable writes that the client must not bypass.
 
-## RoomMinutes table example
-The intended RoomMinutes table set was:
-- `rm_meeting`
-- `rm_chatmessage`
-- `rm_useraiprofile`
+## Example table set shape for a new domain
+A representative shape for a new domain's schema, as a pattern rather than a
+specific project's tables:
+- one main "parent" table (`<prefix>_<entity>`) holding the core record,
+- one child or related table (`<prefix>_<childentity>`) for line items or
+  related records where the relationship is one-to-many,
+- one per-user table (`<prefix>_userprofile`) if the feature needs per-user
+  settings or state distinct from the Dataverse `systemuser` record.
 
-Representative meeting fields:
-- `rm_title`
-- `rm_status`
-- `rm_durationms`
-- `rm_summarymarkdown`
-- `rm_transcripttext`
-- `rm_chunkcount`
-- `rm_audiomanifestjson`
-- `rm_transcriptblobpath`
-- `rm_owneraadobjectid`
-
-Use this as a pattern for AI-generated schema design:
-- one main meeting table,
-- one child or related message table,
-- one per-user AI profile table,
-- explicit owner-tracking fields when backend filtering or app-user binding needs them.
+Representative fields to consider on the parent table:
+- a primary name/title field,
+- a status/state field (picklist),
+- explicit owner-tracking fields (e.g. `ownerid`, or `<prefix>_owneraadobjectid`
+  if the owner is an external identity rather than a Dataverse user) when
+  backend filtering or app-user binding needs them,
+- large text or blob-reference fields kept on a child table rather than the
+  parent row if they can grow large (long-form text, file/blob path
+  references).
 
 ## Reality check before saying “Dataverse is live”
 Confirm all of these:

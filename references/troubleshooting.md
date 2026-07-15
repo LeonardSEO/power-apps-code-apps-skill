@@ -133,9 +133,9 @@ Fix:
 Lesson:
 - backend CORS and blob CORS are independent.
 
-### `Meeting not found` after create succeeded
+### Record not found immediately after create succeeded
 Cause:
-- meeting state was kept in process memory,
+- record state was kept in process memory,
 - the next function invocation did not see that state.
 
 Fix:
@@ -151,12 +151,12 @@ Cause:
 Fix:
 
 ```ts
-app.http("complete-meeting", {
+app.http("complete-<resource>", {
   methods: ["POST"],
   authLevel: "anonymous",
-  route: "meetings/{meetingId}/complete",
+  route: "<resources>/{id}/complete",
   extraInputs: [df.input.durableClient()],
-  handler: completeMeetingHandler,
+  handler: completeHandler,
 });
 ```
 
@@ -201,14 +201,17 @@ Separate these five ideas every time:
 4. The backend can authenticate to Dataverse.
 5. Runtime writes actually go to Dataverse.
 
-RoomMinutes showed why this matters. The backend used this repository choice:
+This matters in practice: a project can have Dataverse enabled and a
+Dataverse repository class fully implemented, while runtime persistence
+still resolves to something else entirely, based purely on how the
+repository is selected at startup:
 
 ```ts
 const repository = env.useInMemory
   ? storage
-    ? new BlobBackedRoomMinutesRepository(storage)
-    : new InMemoryRoomMinutesRepository()
-  : new DataverseRoomMinutesRepository(required(env.dataverseUrl, "RM_DATAVERSE_URL"));
+    ? new BlobBacked<Entity>Repository(storage)
+    : new InMemory<Entity>Repository()
+  : new Dataverse<Entity>Repository(required(env.dataverseUrl, "<PREFIX>_DATAVERSE_URL"));
 ```
 
 Lesson:
