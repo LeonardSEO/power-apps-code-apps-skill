@@ -39,12 +39,42 @@ if (!res.success || !res.data) throw new Error(formatError(res.error)); // never
   } as Omit<Ths_beheerdagsBase, 'ths_beheerdagid'>);
   ```
 
-- **Read a lookup**: the GUID is on `_<field>_value`; the display text is on `<field>name`.
-  A lookup value is a GUID — rendering it directly is the classic "column shows a GUID" bug.
-  Resolve it (join to the target record, or select the formatted `…name`), don't display
-  `_value`.
+- **Read a lookup**: the GUID is on `_<field>_value`; the generated model also declares a
+  `<field>name` pseudo-field for the display text — but **do not put `<field>name` in
+  `select`**. It is not a real column; selecting it throws `Could not find a property named
+  '<field>name' on type ...`. It is *also not auto-populated* just because `_<field>_value`
+  is in `select` — that assumption silently returns `undefined`/a fallback string instead of
+  throwing, so it's easy to ship "every name says Unknown" and not notice until someone
+  points at the screen. The actual fix: batch-resolve the GUIDs yourself with a follow-up
+  query (one call per page of rows, `filter: ids.map(id => \`<idField> eq ${id}\`).join(' or
+  ')`), then merge names back onto the mapped objects. Do this once as a shared helper, not
+  per call site. Never render `_value` directly — that's the classic "column shows a GUID" bug.
+- **`ownerid` and other polymorphic lookups** (systemuser-or-team, etc.) reject a raw scalar
+  value on create/update — `ownerid: someGuid` throws `A 'PrimitiveValue' node with non-null
+  value was found ... 'StartObject' node ... was expected`. Polymorphic lookups still go
+  through `@odata.bind` like any other lookup:
+  ```ts
+  'ownerid@odata.bind': `/systemusers(${userId})`,   // correct
+  ownerid: userId,                                    // wrong — throws at runtime
+  ```
+  The generated `Base` model still types `ownerid`/`owneridtype` as required plain fields, so
+  once you replace them with the `@odata.bind` key the payload needs
+  `as unknown as Omit<YourBase, 'yourIdField'>` instead of a direct `as` cast (TypeScript
+  refuses a direct cast when too few of the "required" keys are still present).
 - **Option sets / choices** are numeric. Use the constants from the generated model; never
-  invent numeric values. Read the label from the matching `…name` field.
+  invent numeric values. Read the label from the matching `…name` field (same caveat as
+  lookups above — verify it's actually populated for your query shape rather than assuming).
+- **`null` vs `undefined`**: Dataverse returns JSON `null` for empty optional columns; the
+  generated types say `field?: Type`, which reads as "may be `undefined`". Code written as
+  `value === undefined ? fallback : value.toFixed(2)` lets `null` through and crashes on
+  `.toFixed()`. This is invisible against mock/example data (which naturally omits the key
+  rather than nulling it) and only shows up against real rows. Fix once, at the row →
+  domain-object mapping boundary: `amountDue: row.ths_amountdue ?? undefined` for every
+  optional field — not at each call site.
+- **Excluding service/application accounts from a "list people" query**: a plain
+  `systemusers` query also returns application users, connector service accounts, and flow
+  accounts (`#PowerAutomate-...`, `#PowerPages...`, etc). Add `accessmode eq 0` (Read-Write —
+  genuine interactive users) alongside `isdisabled eq false` to filter them out.
 
 ## Calling a cloud flow
 
@@ -86,9 +116,14 @@ Dataverse file column.
 ## Custom API / action (server-side authority)
 
 For rules that must be atomic/authoritative (e.g. "exactly one active record per parent"),
-a client-side check is not a guarantee. Add the server-side Custom API and call it via the
-generated service (see [dataverse-provisioning.md](dataverse-provisioning.md) —
-`add-dataverse-api --api-name`). The app then calls one generated action instead of a
+or for anything that needs to Associate/Disassociate a many-to-many relationship (the
+generated client cannot do this at all — `create`/`delete` on tables like `systemuserroles`
+or `teammembership` throws `The 'Create' method does not support entities of type '<table>'`),
+a client-side check is not a guarantee. If the Custom API doesn't exist yet, provision it —
+plugin, assembly, and all — with the fully CLI-driven procedure in
+[dataverse-provisioning.md](dataverse-provisioning.md#provisioning-a-custom-api--plugin--100-cli-no-maker-portal).
+Once it exists, wire it into the app with `add-dataverse-api --api-name` and call the
+generated service like any other — the app then calls one generated action instead of a
 read-then-write race.
 
 ## Office 365 Users (avatars, profiles) — a distinct connector
