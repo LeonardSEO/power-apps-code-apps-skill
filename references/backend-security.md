@@ -10,14 +10,19 @@
 ## Direct HTTP calls
 Raw `fetch()` from the browser is technically possible because a Code App is still a browser SPA.
 
-Do not treat that as the default architecture.
+Do not treat that as the default architecture. Dataverse, Microsoft Graph, Microsoft 365, Azure management APIs, and services with a supported Power Platform connector must use generated connector services. A browser call is not a substitute for those connectors.
 
-Use direct browser HTTP only when all of the following are true:
+Use direct browser HTTP to a custom backend only when all of the following are true and the decision is documented:
 - no secret is required in the client,
-- CORS is solved cleanly,
 - the endpoint is intended for browser callers,
 - the user accepts that the request surface is visible in the browser,
-- the data is not sensitive enough to require a stronger boundary.
+- the data and operation do not require a stronger trust boundary,
+- authorization is enforced by the backend rather than trusted client state,
+- Power Apps Code Apps CSP permits the destination,
+- backend CORS permits the deployed Code App origin,
+- storage CORS is configured separately when the browser uploads directly to storage,
+- tenant governance and DLP policy permit the architecture,
+- Local Play and the deployed Power Apps host are both tested.
 
 In Code Apps, “CORS is solved” is usually not enough by itself. Validate all browser-facing layers:
 - Power Apps Code Apps CSP,
@@ -53,6 +58,7 @@ Use Azure Functions or another backend when you need:
 
 Important:
 - `power-apps push` does not build or deploy Azure Functions.
+- `pa app push` does not build or deploy Azure Functions.
 - Backend deployment is a separate pipeline or release step.
 
 ## Dataverse server-side logic
@@ -69,3 +75,4 @@ That is the right place for enforcement, not the client.
 - Do not edit `src/generated` manually.
 - Do not store sensitive business rules in the bundle if the requirement says users must not be able to inspect them.
 - Do not assume that because a call works in Local Play, it is acceptable for enterprise deployment.
+- Do not weaken CSP with broad wildcards merely to make a browser call work.

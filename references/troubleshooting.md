@@ -32,10 +32,10 @@ If any of these are unknown, say so explicitly before the implementation starts.
 | TS2322 / other type error | Report the file and line number; fix before deploying |
 | Module not found | Run `npm install` in the project root and retry once |
 | Node.js version error | Upgrade to v22+ or switch with `nvm use 22` |
-| Auth error on push | Run `power-apps logout`, then retry — CLI will re-prompt browser login |
+| Auth error on push | Run the resolved `pa auth logout` or `power-apps logout`, then retry; the CLI will re-prompt browser login |
 | `environment config does not match` | Update `environmentId` in `power.config.json` to the target environment |
-| `power-apps add-data-source` fails | Report exact error; check connection ID with `power-apps list-connections` |
-| `Could not find a property named '<field>'` | Schema drift: a generated/hand-written `$select` field is not in the current environment. Use logical names from live metadata; run `power-apps refresh-data-source`; do not copy generated files between branches without re-adding the data source |
+| Adding a data source fails | Report the exact error; verify the connection ID with the resolved `pa connection list` or `power-apps list-connections` |
+| `Could not find a property named '<field>'` | Schema drift: a generated/hand-written `$select` field is not in the current environment. Use logical names from live metadata; run the resolved data-source refresh command; do not copy generated files between branches without regenerating against the target schema |
 | `Connection reference not found: <name>` | Runtime, not build. The data source is in `power.config.json` but the connection reference is missing/unlinked, or the user lacks runtime permission. Check those two separately |
 | `EADDRINUSE :::8080` or `:5173` | A Local Play port is taken. `lsof -i :8080` to find the owner before killing; Local Play needs both the connection-runtime and Vite ports free |
 | `Launch App failed with Http status code of 0` | Do not hand-build the Local Play URL from an old app id — open the URL the CLI prints |
@@ -55,7 +55,7 @@ host ruis, not your bug:
 | Connection-reference error | `Connection reference not found` | `power.config.json` + linked reference + user rights |
 | Power Apps host noise | Permissions-Policy, telemetry blocks, React warnings from host code, Office/CDN 403 | ignore — not your app |
 | Browser policy | Local Network Access, third-party cookies | browser profile/settings |
-| CORS / CSP | blocked cross-origin/inline | it's a direct-fetch/architecture smell — go connector-first |
+| CORS / CSP | blocked cross-origin/inline | use a connector for Microsoft/connector-supported services; for an approved custom browser backend, verify every CSP and CORS layer |
 
 Rule of thumb: follow the first *app* request that fails; do not chase host warnings.
 
@@ -65,7 +65,7 @@ Never collapse these into one imagined deploy step:
 ### Frontend
 ```bash
 npm run build
-power-apps push
+pa app push  # or the resolved flat: power-apps push
 ```
 
 ### Backend

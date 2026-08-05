@@ -5,9 +5,20 @@ Dataverse, flows, file columns and connectors from app code. All of it lives beh
 `src/generated/**`; keep these calls inside a repository/service layer, never in components,
 and never hand-edit generated files.
 
-## Generated Dataverse service surface
+## Inspect the generated contract first
 
-Every generated `<Table>Service` / `AccountsService` exposes the same shape:
+Generated method names and request/response types can change with the CLI, connector schema, and source type. Never implement from a remembered example alone. Search the current generated service and models, then compile the call:
+
+```bash
+rg -n "public static async|create\(|getAll\(|upload|download|deleteFile" src/generated/services src/generated/models
+npm run build
+```
+
+Do not read or patch a huge generated file blindly. Locate the method and its referenced request/response types. Regeneration is the source of truth.
+
+## Typical generated Dataverse service surface
+
+A generated `<Table>Service` / `AccountsService` commonly exposes this shape:
 
 ```ts
 create(record)                          // → IOperationResult<T>
@@ -16,6 +27,9 @@ getAll({ select, filter, orderBy, top }) // → IOperationResult<T[]>
 update(id, changedFields)               // → IOperationResult<T>   (partial update)
 delete(id)                              // → Promise<void>   ← NOT IOperationResult, throws on failure
 getMetadata()
+upload(...)                             // file/image columns, when generated
+downloadFile(...) / downloadImage(...) // file/image columns, when generated
+deleteFileOrImage(...)                 // file/image columns, when generated
 ```
 
 **Watch the `delete` asymmetry:** `create/update/get/getAll` return `IOperationResult`
@@ -100,7 +114,9 @@ carry a business flag (e.g. `{ succes: boolean }`) — check it, not just transp
 
 ## File / image columns
 
-Dataverse file/image columns are read and written as bytes through the client, not fetched:
+Prefer the current generated table-service methods for Dataverse file/image columns. Depending on the generated schema, inspect for `upload`, `downloadFile`, `downloadImage`, and `deleteFileOrImage`; use their generated parameter and result types exactly.
+
+If the current generator does not expose those methods, the lower-level Power Apps data client is the compatibility fallback:
 
 ```ts
 const client = getClient(dataSourcesInfo);
@@ -108,7 +124,7 @@ const { data /* Uint8Array */, fileName } = await client.downloadFileFromRecord(
 await client.uploadFileToRecord(table, id, column, name, arrayBuffer);
 ```
 
-Use this for PDFs/images instead of a direct URL. If a feature stores its output in
+Use generated services or this client fallback for PDFs/images instead of a raw Dataverse URL. Do not assume file and image operations have identical return shapes. If a feature stores its output in
 SharePoint via a flow (not a Dataverse file column) and the account lacks that SharePoint
 connection, the feature is blocked until access is granted OR the flow also writes a
 Dataverse file column.

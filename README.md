@@ -18,12 +18,12 @@ It is designed for AI vibecoding workflows where the model needs to understand:
 ## What this skill covers
 - Official bootstrap flow with the Microsoft Vite template
 - TypeScript, Vite, and `@microsoft/power-apps` defaults
-- npm CLI and PAC CLI usage
+- Safe project-local CLI resolution with grouped `pa`, flat `power-apps`, and PAC compatibility
 - Local Play and browser gotchas
 - CSP, CORS, white-screen, caching, and runtime-state troubleshooting
-- Dataverse integration
+- Dataverse integration, generated CRUD contracts, lookups, and file/image operations
 - Dataverse provisioning, solution import, and Web API metadata fallback
-- SharePoint boundaries
+- Goal-based connector routing and practical SharePoint, Teams, Outlook, Excel, OneDrive, Azure DevOps, Work IQ, and Copilot Studio playbooks
 - Copilot Studio agent integration
 - Connection references and ALM
 - Backend patterns with Azure Functions, API Management, and custom connectors
@@ -41,6 +41,7 @@ power-apps-code-apps-skill/
 └── references/
     ├── backend-security.md
     ├── build-agent.md
+    ├── data-access-contract.md
     ├── dataverse-provisioning.md
     ├── data-integrations.md
     ├── limitations-search.md

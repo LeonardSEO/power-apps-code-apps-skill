@@ -19,12 +19,12 @@ Act as a strict Power Apps Code Apps reviewer. Prioritize correctness, platform 
 
 Check for:
 
-- Direct `fetch()`, `axios`, or browser HTTP calls to Dataverse, Microsoft 365, Azure, or external services.
+- Direct `fetch()`, `axios`, or browser HTTP calls to Dataverse, Microsoft 365, Azure management APIs, or connector-supported services. For a custom browser-facing backend, require the documented exception decision and CSP/CORS/auth/deployed-host evidence from [backend-security.md](backend-security.md).
 - Dataverse access outside generated services and repository implementations.
 - UI components importing generated connector services directly.
 - Hand-edited generated files under `src/generated/`.
 - Missing build or lint validation after TypeScript/React changes.
-- `power-apps push`, `pac code push`, solution mutations, or publishing without explicit approval and a successful build.
+- `pa app push`, `power-apps push`, `pac code push`, solution mutations, or publishing without explicit approval and a successful current build.
 - Hardcoded credentials, tokens, tenant ids used as secrets, connection strings, or customer data.
 - Auth changes such as custom MSAL/OAuth flows that bypass the Power Apps host.
 - Unbounded `getAll()` calls or loops that trigger excessive connector calls.

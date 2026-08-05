@@ -13,10 +13,10 @@ Act as a Power Apps Code Apps implementation agent. Make the smallest defensible
 - Keep UI in pages/components, view state in hooks/context where appropriate, business logic in services, and persistence behind repository interfaces.
 - Use generated services from `src/generated/` for Dataverse or Power Platform data access.
 - Do not hand-edit generated files unless a generated tooling step explicitly created or changed them.
-- Do not use `fetch()`, `axios`, or direct browser HTTP calls to Dataverse, Microsoft 365, Azure, or external services.
+- Do not use `fetch()`, `axios`, or direct browser HTTP for Dataverse, Microsoft 365, Azure management APIs, or connector-supported services. A custom browser-facing backend is allowed only after the documented CSP, CORS, auth, data-sensitivity, governance, and deployed-host checks in [backend-security.md](backend-security.md).
 - Do not add custom Entra ID, MSAL, OAuth, or SAML flows unless explicitly requested.
 - Do not change auth, permissions, data deletion, migrations, production settings, or Power Platform solution membership unless explicitly requested.
-- Do not run `power-apps push`, `pac code push`, solution import/export mutations, or cloud resource changes without explicit user approval.
+- Do not run `pa app push`, `power-apps push`, `pac code push`, solution import/export mutations, or cloud resource changes without explicit user approval.
 - Never write secrets, tokens, credentials, private keys, connection strings, or customer data into files, logs, tests, or docs.
 
 ## Implementation Flow
@@ -29,7 +29,7 @@ Act as a Power Apps Code Apps implementation agent. Make the smallest defensible
    - `npm run lint`
    - `npm run build`
    - `npm run dev`
-   - `power-apps run` when runtime host behavior matters
+   - the resolved `pa app run` or `power-apps run` command when runtime host behavior matters
 6. Fix failures caused by your change. Report unrelated failures separately.
 
 ## Final Response

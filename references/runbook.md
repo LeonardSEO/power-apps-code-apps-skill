@@ -4,7 +4,7 @@
 - Vite SPA
 - TypeScript
 - `@microsoft/power-apps`
-- npm CLI for the current happy path
+- npm CLI with grouped `pa` preferred and flat `power-apps` fallback
 - PAC CLI for auth, data-source operations, and compatibility paths
 
 ## Preflight
@@ -18,6 +18,69 @@ Before starting, collect:
 - direct `fetch()` versus connector
 - runtime storage truth
 
+## CLI resolution: `pa` preferred, `power-apps` fallback
+
+Resolve from the project root once per session. Never let `npx` install a
+missing `pa` or `power-apps` package implicitly.
+
+```bash
+if [[ -e node_modules/.bin/pa || -e node_modules/.bin/pa.cmd ]]; then
+  PA_KIND=pa
+  PA=(npx --no-install pa)
+elif [[ -e node_modules/.bin/power-apps || -e node_modules/.bin/power-apps.cmd ]]; then
+  PA_KIND=power-apps
+  PA=(npx --no-install power-apps)
+elif command -v pa >/dev/null 2>&1; then
+  PA_KIND=pa
+  PA=(pa)
+elif command -v power-apps >/dev/null 2>&1; then
+  PA_KIND=power-apps
+  PA=(power-apps)
+else
+  PA_KIND=none
+  PA=()
+fi
+```
+
+- Prefer the project-local shim. A global official binary is an existing-tool
+  fallback, not permission to install globally.
+- If `PA_KIND=none`, run the project's existing `npm install` and re-probe. Ask
+  before any global install.
+- Commands in this reference use canonical grouped `pa` syntax. Execute them as
+  `"${PA[@]}" <noun> <verb> ...` when `PA_KIND=pa`. When only `power-apps` is
+  available, translate both the verb path and renamed flags before execution.
+- Verify unfamiliar or preview flags with `"${PA[@]}" --help` and the relevant
+  command help from the installed CLI.
+
+| Operation | Grouped `pa` | Flat `power-apps` |
+|---|---|---|
+| Initialize | `pa app init` | `power-apps init` |
+| Local Play runtime | `pa app run` | `power-apps run` |
+| Push | `pa app push` | `power-apps push` |
+| List apps | `pa app list` | `power-apps list-codeapps` |
+| Add data source | `pa app add data-source` | `power-apps add-data-source` |
+| Refresh data source | `pa app refresh data-source` | `power-apps refresh-data-source` |
+| Remove data source | `pa app remove data-source` | `power-apps delete-data-source` |
+| Find/add Dataverse API | `pa app find-dataverse-api` / `pa app add dataverse-api` | `power-apps find-dataverse-api` / `power-apps add-dataverse-api` |
+| List/add/remove flow | `pa app list-flows` / `pa app add flow` / `pa app remove flow` | `power-apps list-flows` / `power-apps add-flow` / `power-apps remove-flow` |
+| Connections | `pa connection list` | `power-apps list-connections` |
+| Create connection | `pa connection create` | `power-apps create-connection` |
+| Datasets/tables | `pa connector list-datasets` / `pa connector list-tables` | `power-apps list-datasets` / `power-apps list-tables` |
+| Auth | `pa auth login/status/switch/logout` | `power-apps login/auth-status/auth-switch/logout` |
+
+Renamed selector flags:
+
+| Meaning | Grouped `pa` | Flat `power-apps` |
+|---|---|---|
+| Connector/API | `--connector` | `--api-id` / `-a` |
+| Table/resource | `--table` | `--resource-name` / `-t` |
+| Data-source name | `--name` | `--data-source-name` / `-n` |
+| Connection reference | `--connection-ref` | `--connection-ref` / `-cr` |
+
+Connection (`-c`), dataset (`-d`), environment (`-e`) and init display-name
+flags are unchanged. The meaning of `-n` is command-specific; prefer the long
+form in generated instructions.
+
 ## New app bootstrap
 Use the official Microsoft template first.
 
@@ -25,7 +88,7 @@ Use the official Microsoft template first.
 npx degit github:microsoft/PowerAppsCodeApps/templates/vite my-app --force
 cd my-app
 npm install
-power-apps init -n "My Code App" -e <environment-id>
+pa app init --display-name "My Code App" --environment-id <environment-id>
 npm run dev
 ```
 
@@ -67,13 +130,13 @@ runtime running together (that is what `make dev-dataverse`-style scripts wrap):
 
 ```bash
 npm run dev                                   # 1) Vite frontend (default :5173)
-power-apps run \                              # 2) Power Apps connection runtime
+pa app run \                                  # 2) Power Apps connection runtime
   --port 8080 \                               #    connection-runtime port
   --local-app-url http://localhost:5173       #    where Vite serves the app
 ```
 
 - `--port` is the connection runtime; `--local-app-url` points at the Vite dev server —
-  two different ports. `power-apps run` does not itself start your Vite app.
+  two different ports. `pa app run` does not itself start your Vite app.
 - Let the CLI print the `Local Play` URL and open THAT. Do not hand-build a URL from an
   old app id — that yields `Launch App failed with Http status code of 0`.
 - Open it in the **same browser profile** as the Power Platform tenant. If it fails in
@@ -88,7 +151,7 @@ Use the npm CLI path first:
 
 ```bash
 npm run build
-power-apps push
+pa app push
 ```
 
 Fallback when the tenant or workflow still relies on PAC:
@@ -112,7 +175,7 @@ pac code push --solutionName <solutionName>
 
 ## Multiple data sources
 When adding multiple connectors in sequence:
-- Run `npm run build` after each `power-apps add-data-source` to catch errors early.
+- Run `npm run build` after each resolved data-source add/refresh operation to catch generated-contract errors early.
 - Do NOT deploy after each connector — deploy once after all connectors are wired.
 
 ## Cloud flows (npm CLI only)
@@ -126,9 +189,9 @@ only usable when ALL of these hold — check them in order:
 5. `add-flow` has added the generated types/service/schema + config.
 
 ```bash
-power-apps list-flows --search "<name>" --json
-power-apps add-flow --flow-id <workflow-id>       # generates typed service + schema, edits power.config.json
-power-apps remove-flow --flow-id <workflow-id>
+pa app list-flows --search "<name>" --json
+pa app add flow --flow-id <workflow-id>       # generates typed service + schema, edits power.config.json
+pa app remove flow --flow-id <workflow-id>
 ```
 
 After `add-flow`, verify: `power.config.json` (watch for a duplicated `connectionReferences`
@@ -141,46 +204,46 @@ generated flow service is covered in [data-access-contract.md](data-access-contr
 Browser auth happens on first `init`/`push`, but the CLI is multi-account:
 
 ```bash
-power-apps login          # add an account (opens browser)
-power-apps auth-status     # show cached accounts; the active one is marked
-power-apps auth-switch     # choose which cached account other commands run as
-power-apps logout          # clears ALL cached accounts — use auth-switch to just change active
+pa auth login          # add an account (opens browser)
+pa auth status         # show cached accounts; the active one is marked
+pa auth switch         # choose which cached account other commands run as
+pa auth logout         # clears ALL cached accounts — use auth switch to just change active
 ```
 
 ## CLI quick reference
-`power-apps` = the project-local binary (`./node_modules/.bin/power-apps`), not bare `npx`
-(see SKILL.md). Read live help with `power-apps --help` / `power-apps <verb> --help`
-(the bare `help` verb is unsupported; `init --help` needs an empty dir). Global flags:
-`--json`, `--non-interactive`, `--no-color`.
+These are canonical grouped operations. Resolve and translate them with the
+CLI-resolution section above; never execute a bare unresolved binary. Global
+flags commonly include `--json`, `--non-interactive`, and `--no-color`, but the
+installed `--help` is authoritative.
 
 ```bash
 # App lifecycle
-power-apps init -n '<app-name>' -e <env-id>        # creates power.config.json (needs empty dir)
-power-apps run --port 8080 --local-app-url <url>   # connection runtime for Local Play
-power-apps push [--solution-name <name>]           # deploy (run npm run build first)
-power-apps list-codeapps
+pa app init --display-name '<app-name>' --environment-id <env-id>
+pa app run --port 8080 --local-app-url <url>
+pa app push [--solution-id <id>]                    # build and obtain approval first
+pa app list
 
 # Data sources
-power-apps add-data-source -a <api> [-c <conn-id>] [-d <dataset>] [-t <table>]
-power-apps refresh-data-source [--data-source-name <name>]   # regenerate types (NOT delete+re-add)
-power-apps delete-data-source --api-id <api> --data-source-name <name>
-power-apps add-dataverse-api --api-name <op>       # Custom API / action (flag is --api-name)
-power-apps find-dataverse-api --search "<term>"
+pa app add data-source --connector <api> [-c <conn-id>] [-d <dataset>] [--table <table>]
+pa app refresh data-source [--name <name>]          # regenerate types (NOT delete+re-add)
+pa app remove data-source --connector <api> --name <name>
+pa app add dataverse-api --api-name <op>
+pa app find-dataverse-api --search "<term>"
 
 # Discovery
-power-apps list-connections
-power-apps list-connection-references
-power-apps list-environment-variables
-power-apps list-datasets -a <api> -c <conn-id>
-power-apps list-tables -a <api> -c <conn-id> -d <dataset>
-power-apps list-sqlStoredProcedures -a <api> -c <conn-id> -d <dataset>
+pa connection list
+pa connection list-references
+pa app list-environment-variables
+pa connector list-datasets --connector <api> -c <conn-id>
+pa connector list-tables --connector <api> -c <conn-id> -d <dataset>
+pa connector list-procedures --connector <api> -c <conn-id> -d <dataset>
 
 # Connections, flows, auth
-power-apps create-connection --api-id <api> --display-name "<name>"   # preview; SSO vs browser varies
-power-apps list-flows --search "<name>" --json
-power-apps add-flow --flow-id <id>
-power-apps remove-flow --flow-id <id>
-power-apps login | auth-status | auth-switch | logout
+pa connection create --connector <api> --display-name "<name>"   # preview; SSO vs browser varies
+pa app list-flows --search "<name>" --json
+pa app add flow --flow-id <id>
+pa app remove flow --flow-id <id>
+pa auth login | status | switch | logout
 ```
 
 > Live CLI help can itself be inconsistent — e.g. `push --help` shows `--solution-id` while
@@ -191,6 +254,8 @@ power-apps login | auth-status | auth-switch | logout
 - Do not start from Next.js or another server-heavy stack unless you already know which parts are purely client-side.
 - Do not treat `power.config.json` as application logic.
 - Do not publish before local play works.
-- Do not assume `power-apps push` deploys Azure Functions or any other backend resource.
+- Do not assume `pa app push` or `power-apps push` deploys Azure Functions or any other backend resource.
 - Do not use Node.js 20 or earlier — v22+ is required.
-- Do not use `fetch()` or `axios` directly — use generated connector services instead.
+- Do not call Power Platform or Microsoft 365 directly from the browser. For an
+  explicitly approved custom-backend exception, complete the CSP/CORS/security
+  preflight in [backend-security.md](backend-security.md#direct-http-calls).

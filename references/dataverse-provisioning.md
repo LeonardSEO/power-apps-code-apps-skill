@@ -1,5 +1,7 @@
 # Dataverse Provisioning and Runtime Design
 
+`pa` examples in this reference use the grouped current CLI. Resolve the project-local CLI and translate to flat `power-apps` syntax when needed with [runbook.md](runbook.md#cli-resolution-pa-preferred-power-apps-fallback). PAC commands remain appropriate for solution, environment, and plugin operations.
+
 ## Contents
 - Auth: device code vs interactive (what actually works)
 - Decision ladder
@@ -90,8 +92,8 @@ This generates model and service files under `src/generated/...`.
 Classic PAC data-source flow still skips Dataverse operation schema files. The latest npm CLI has a preview route for Dataverse operations:
 
 ```bash
-power-apps find-dataverse-api --search "WhoAmI"
-power-apps add-dataverse-api --api-name <operation-name>   # flag is --api-name (NOT --name)
+pa app find-dataverse-api --search "WhoAmI"
+pa app add dataverse-api --api-name <operation-name>
 ```
 
 Treat this as newer platform surface area and verify the generated files before you rely on it. This is the sanctioned route for calling a Custom API / action (e.g. an atomic server-side operation) from the app; the generated service is invoked like any other generated service.
@@ -326,8 +328,8 @@ unaffected by any Conditional Access block on device code.
 ### 8. Wire the Custom API into the Code App
 
 ```bash
-power-apps find-dataverse-api --search <ActionUniqueName>
-power-apps add-dataverse-api --api-name <ActionUniqueName>
+pa app find-dataverse-api --search <ActionUniqueName>
+pa app add dataverse-api --api-name <ActionUniqueName>
 ```
 
 Generates a typed service (`executeAsync` under the hood, `action:
