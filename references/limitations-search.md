@@ -65,7 +65,8 @@ Compare the returned commit with the last reviewed upstream commit recorded in t
 Because this portable skill must not create state in a user's project, run drift checks explicitly rather than writing timestamp/cache files. After edits, validate the existing bundle with:
 
 ```bash
-python3 <skill-creator-dir>/scripts/quick_validate.py <this-skill-dir>
+python3 <skill-creator-dir>/scripts/quick_validate.py <this-skill-dir>  # macOS/Linux
+py -3 <skill-creator-dir>/scripts/quick_validate.py <this-skill-dir>    # Windows
 rg -n 'npx (pa|power-apps)( |$)' <this-skill-dir>
 rg -n 'Direct HTTP calls do not work|sandbox blocks arbitrary' <this-skill-dir>
 ```

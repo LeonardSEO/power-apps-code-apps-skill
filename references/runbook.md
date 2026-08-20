@@ -42,6 +42,21 @@ else
 fi
 ```
 
+In native Windows PowerShell, use the equivalent local-shim probe:
+
+```powershell
+if (Test-Path node_modules/.bin/pa.cmd) {
+  $PaKind = "pa"; $Pa = @("npx", "--no-install", "pa")
+} elseif (Test-Path node_modules/.bin/power-apps.cmd) {
+  $PaKind = "power-apps"; $Pa = @("npx", "--no-install", "power-apps")
+} else {
+  $PaKind = "none"; $Pa = @()
+}
+```
+
+In this template, prefer the cross-platform `make code-*` targets; the probes
+above are for standalone skill use and troubleshooting.
+
 - Prefer the project-local shim. A global official binary is an existing-tool
   fallback, not permission to install globally.
 - If `PA_KIND=none`, run the project's existing `npm install` and re-probe. Ask
@@ -124,25 +139,24 @@ Rules:
 - Prefer targeted `overrides` for a known transitive issue instead of repeated `--force` installs.
 - Re-run `npm run build` after dependency changes.
 
-## Local Play (two processes)
-Local Play is NOT just Vite. It needs the Vite frontend AND the Power Apps connection
-runtime running together (that is what `make dev-dataverse`-style scripts wrap):
+## Local Play
+Local Play needs the Vite frontend and Power Apps configuration together. The
+current grouped CLI starts the package's `dev` script itself:
 
 ```bash
-npm run dev                                   # 1) Vite frontend (default :5173)
-pa app run \                                  # 2) Power Apps connection runtime
-  --port 8080 \                               #    connection-runtime port
-  --local-app-url http://localhost:5173       #    where Vite serves the app
+pa app run --port 8080 --local-app-url http://localhost:5173
 ```
 
-- `--port` is the connection runtime; `--local-app-url` points at the Vite dev server —
-  two different ports. `pa app run` does not itself start your Vite app.
+- `--port` is the configuration runtime; `--local-app-url` points at the Vite
+  dev server — two different ports. Current `pa app run` starts the configured
+  package `dev` script; do not start a second Vite process.
 - Let the CLI print the `Local Play` URL and open THAT. Do not hand-build a URL from an
   old app id — that yields `Launch App failed with Http status code of 0`.
 - Open it in the **same browser profile** as the Power Platform tenant. If it fails in
   Chrome/Edge, check **Local Network Access** permissions before touching code.
-- `EADDRINUSE :::8080` (or 5173) means the port is taken. Find the owner first
-  (`lsof -i :8080`) before killing anything.
+- `EADDRINUSE :::8080` (or 5173) means the port is taken. Find the owner with
+  `lsof -i :8080` on macOS or `Get-NetTCPConnection -LocalPort 8080` in
+  PowerShell before killing anything.
 - A Vite smoke check (page renders) is NOT a Power Apps/connector smoke check (data loads
   through the runtime). Verify the actual failing request in the Network tab.
 
