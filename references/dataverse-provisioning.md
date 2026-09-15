@@ -80,13 +80,11 @@ Reduce that role later. For production, scope the app user to the smallest set o
 This is the supported generated-service flow for tables:
 
 ```bash
-pac auth create
-pac env select --environment <environment-id>
-pac code add-data-source -a dataverse -t <prefix>_table1
-pac code add-data-source -a dataverse -t <prefix>_table2
+pa app add data-source --connector dataverse --table <prefix>_table1
+pa app add data-source --connector dataverse --table <prefix>_table2
 ```
 
-This generates model and service files under `src/generated/...`.
+Use the initialized Code App environment and the resolved npm CLI. Legacy `pac code add-data-source -a dataverse -t <table>` remains a compatibility fallback with a separately selected PAC environment. This generates model and service files under `src/generated/...`.
 
 ### 4. Add Dataverse actions or functions
 Classic PAC data-source flow still skips Dataverse operation schema files. The latest npm CLI has a preview route for Dataverse operations:
@@ -122,7 +120,7 @@ for a first-time registration.
    - Dataverse org URL
    - Web API base URL
 3. Provision schema by solution import when possible.
-4. Add the tables to the Code App with `pac code add-data-source`.
+4. Add the tables to the Code App with the resolved `pa app add data-source --connector dataverse --table <logical-name>`.
 5. Implement CRUD using generated services.
 6. If a backend also talks to Dataverse, provision its app user and test token-based access separately.
 7. Verify runtime actually uses Dataverse instead of an in-memory or blob fallback.

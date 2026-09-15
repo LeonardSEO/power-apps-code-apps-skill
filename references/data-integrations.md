@@ -6,8 +6,8 @@ Use generated connector services for Dataverse, Microsoft Graph, Microsoft 365, 
 
 | MUST NOT | MUST |
 |---|---|
-| `fetch("https://graph.microsoft.com/...")` | Use `/add-office365`, `/add-sharepoint`, or `/add-dataverse` |
-| `axios.get("https://dev.azure.com/...")` | Use the corresponding connector skill |
+| `fetch("https://graph.microsoft.com/...")` | Use the Outlook, SharePoint, or Dataverse guidance below |
+| `axios.get("https://dev.azure.com/...")` | Use the Azure DevOps connector guidance below |
 | Any raw HTTP call to an M365/Azure service | Use a Power Platform connector |
 
 If no connector supports the required functionality, prefer a custom connector or a protected backend. A direct browser call to a custom backend is an exception, not a fallback shortcut: complete every CSP, CORS, auth, data-sensitivity, governance, and deployed-host check in [backend-security.md](backend-security.md) before implementing it.
@@ -28,6 +28,15 @@ Do not edit those files by hand.
 
 ## General connector flow
 Commands below use the current grouped `pa` syntax. Resolve the project-local CLI first and translate both the verb and flags when only the flat `power-apps` CLI is available; see [runbook.md](runbook.md#cli-resolution-pa-preferred-power-apps-fallback).
+
+Discover the connector catalog separately from existing authenticated connections:
+
+```bash
+pa connector list --search "<capability>" --json
+pa connection list --search "<connector>" --json
+```
+
+Use the returned connector identifier (often `shared_*`), not a guessed display name. For an authorized new connection, `pa connection create --connector <connector-id> --display-name "<name>"` supports SSO or an interactive browser consent flow, depending on the connector. Continue once the CLI confirms success and returns a connection ID. If unsupported, use `https://make.powerapps.com/environments/<environment-id>/connections`. Connection creation is a cloud change; follow the user's authorization scope.
 
 Find your connection ID first:
 
@@ -61,8 +70,8 @@ CLI surfaces change. Verify the resolved version and live help before relying on
 To discover datasets and tables before adding:
 
 ```bash
-pa connector list-datasets --connector <apiId> -c <connectionId>
-pa connector list-tables --connector <apiId> -c <connectionId> -d <dataset>
+pa connection list-datasets --connector <apiId> -c <connectionId>
+pa connection list-tables --connector <apiId> -c <connectionId> -d <dataset>
 ```
 
 ## Choose the integration by goal
@@ -76,6 +85,8 @@ pa connector list-tables --connector <apiId> -c <connectionId> -d <dataset>
 | Excel table rows | `excelonlinebusiness` | OneDrive/SharePoint dataset, file, and table |
 | OneDrive files and folders | `onedriveforbusiness` | dataset plus path or file identifier |
 | Azure DevOps projects/work items | `azuredevops` | organization URL and project |
+| SQL Server / Azure SQL tables or stored procedures | `shared_sql` | existing SQL connection, discovered dataset, table or procedure |
+| Other connectors (Office 365 Users/Groups, Azure Blob/Queues, custom APIs) | returned catalog ID | non-tabular operation or discovered dataset/table |
 | Work IQ / Microsoft 365 Copilot Chat MCP | `shared_a365copilotchatmcp` | connection plus MCP tool contract |
 | Copilot Studio agent | `shared_microsoftcopilotstudio` | published agent and exact agent name |
 
@@ -89,7 +100,7 @@ For environment creation, schema deployment, Web API metadata, generated service
 Add a table:
 
 ```bash
-pac code add-data-source -a dataverse -t <table-logical-name>
+pa app add data-source --connector dataverse --table <table-logical-name>
 ```
 
 Use the generated service:
@@ -126,6 +137,26 @@ Nuance:
 - classic `pac code add-data-source` still does not do schema definition CRUD,
 - the latest npm CLI has a preview path for some Dataverse actions and functions via `find-dataverse-api` and `add-dataverse-api`.
 
+## SQL Server / Azure SQL
+
+Use an existing authorized SQL connection; database provisioning is a separate task. Discover exact dataset and table/procedure names instead of guessing server/database syntax:
+
+```bash
+pa connection list --search sql --json
+pa connection list-datasets --connector shared_sql -c <connection-id>
+pa connection list-tables --connector shared_sql -c <connection-id> -d <dataset>
+pa connection list-procedures -c <connection-id> -d <dataset>
+pa app add data-source --connector shared_sql -c <connection-id> -d <dataset> --table <table>
+# For a stored procedure, use --procedure instead of --table:
+pa app add data-source --connector shared_sql -c <connection-id> -d <dataset> --procedure <procedure>
+```
+
+Inspect the generated procedure service/model for parameters and result sets. Do not assume a procedure has the same CRUD methods as a table, or put SQL credentials in the SPA. Older flat CLI uses `--sql-stored-procedure`/`-sp`; current `pa` uses `--procedure`. Read [Microsoft's SQL guide](https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-azure-sql) for provisioning or connector restrictions, translating legacy commands against installed help.
+
+## Generic connectors
+
+For capabilities outside this table, use `pa connector list` and the [official connector catalog](https://learn.microsoft.com/en-us/connectors/connector-reference/). A non-tabular connector normally needs connector ID plus connection ID. A tabular source additionally needs a discovered dataset and table. Inspect only the generated methods/models needed by the feature and `.power/schemas/<connector>/`; do not assume every connector supports dataset discovery. Adding a connector does not grant its backend permissions.
+
 ## SharePoint
 What is supported well:
 - SharePoint lists as data sources
@@ -140,6 +171,10 @@ What is not first-class here:
 So use SharePoint directly for list data and document metadata. For actual file-content processing or sensitive document workflows, prefer an extra service layer or custom connector.
 
 Before adding the source, discover the dataset and table rather than guessing. SharePoint display names are not always the generated internal names. Inspect the generated service signature after adding or refreshing the source.
+
+- Column internal names survive display-name changes and may contain encodings such as `_x0020_`; copy the generated property, do not derive it by replacing spaces.
+- SharePoint choice values are strings, unlike Dataverse numeric option sets. Multi-value and lookup/person payloads depend on the generated operation: inspect its model before assuming a semicolon string, `{ Id, Value }`, or `FieldId` write shape. A SharePoint site-user ID is not an Entra object ID.
+- Existing lists: connect directly. New/extended lists: inspect existing schema and propose only missing lists/columns before an authorized provisioning change. List creation is not an effect of `add data-source`. For admin-side Graph provisioning, follow [create list](https://learn.microsoft.com/en-us/graph/api/list-create?view=graph-rest-1.0) and [create column](https://learn.microsoft.com/en-us/graph/api/list-post-columns?view=graph-rest-1.0), with the required delegated/application permissions. Keep provisioning tokens outside the browser app.
 
 ## Teams
 
@@ -164,8 +199,8 @@ rg -n "SendEmail|GetEmails|Calendar|Event" src/generated/services src/generated/
 Excel connector operations address a workbook and an actual Excel table, not an arbitrary worksheet range. Discover the dataset and table first. For generated `AddRowIntoTable`-style methods, pass the row fields in the exact generated request shape; do not invent an `items` wrapper unless the generated model requires one.
 
 ```bash
-pa connector list-datasets --connector excelonlinebusiness -c <connection-id>
-pa connector list-tables --connector excelonlinebusiness -c <connection-id> -d <dataset>
+pa connection list-datasets --connector excelonlinebusiness -c <connection-id>
+pa connection list-tables --connector excelonlinebusiness -c <connection-id> -d <dataset>
 pa app add data-source --connector excelonlinebusiness -c <connection-id> -d <dataset> --table <table>
 ```
 
@@ -174,7 +209,7 @@ pa app add data-source --connector excelonlinebusiness -c <connection-id> -d <da
 Use `shared_onedriveforbusiness` for file/folder operations such as listing a folder, reading metadata/content, and creating a file. Paths, file IDs, and binary content are not interchangeable; inspect the generated models for methods such as `ListFolder`, `GetFileMetadata`, `GetFileContent`, and `CreateFile`.
 
 ```bash
-pa app add data-source --connector onedriveforbusiness -c <connection-id> -d <dataset>
+pa app add data-source --connector onedriveforbusiness -c <connection-id>
 rg -n "ListFolder|GetFile|CreateFile" src/generated/services src/generated/models
 ```
 
@@ -193,6 +228,8 @@ rg -n "WorkItem|Query|HttpRequest|body" src/generated/services src/generated/mod
 ```
 
 ## Work IQ / Microsoft 365 Copilot Chat MCP
+
+Use Work IQ for internal Microsoft 365 knowledge/search, not general knowledge, public web, or news. When the workload is explicit (mail, Teams, SharePoint, OneDrive), use its specific connector. The broader `shared_a365mcpservers` connector is a different integration with different generated services.
 
 Use `shared_a365copilotchatmcp` and its generated `WorkIQCopilotMCPService.mcp_m365copilot` operation. Treat MCP initialization as stateless-tolerant: this connector works without an `Mcp-Session-Id`, while sending a client-generated ID on `initialize` can cause `-32001 Session not found`. The reusable wrapper should:
 
@@ -248,10 +285,10 @@ For ALM, bind to connection references instead of personal connections whenever 
 Environment variables can also be used in data-source configuration:
 
 ```bash
-pac code add-data-source --apiid shared_sharepointonline --connectionId <connection-id> --dataset "@envvar:crd1b_SharepointSiteVar" --table "@envvar:crd1b_sharepointList"
+pa app add data-source --connector shared_sharepointonline --connection-ref <reference-logical-name> --dataset "@envvar:crd1b_SharepointSiteVar" --table "@envvar:crd1b_sharepointList"
 ```
 
-This keeps the code app portable across environments.
+Discover references with `pa connection list-references --solution-id <solution-guid>` and variables with `pa app list-environment-variables`. Use the reference logical name returned by discovery. Verify the variable definitions/current values and reference bindings in every target environment; do not assume CLI process variables (`PA_CLI_*`) create solution variables.
 
 ## Performance rules
 - Always use `select`, filters, sorting, paging, and `top` where available.

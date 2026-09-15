@@ -37,7 +37,7 @@ If any of these are unknown, say so explicitly before the implementation starts.
 | Adding a data source fails | Report the exact error; verify the connection ID with the resolved `pa connection list` or `power-apps list-connections` |
 | `Could not find a property named '<field>'` | Schema drift: a generated/hand-written `$select` field is not in the current environment. Use logical names from live metadata; run the resolved data-source refresh command; do not copy generated files between branches without regenerating against the target schema |
 | `Connection reference not found: <name>` | Runtime, not build. The data source is in `power.config.json` but the connection reference is missing/unlinked, or the user lacks runtime permission. Check those two separately |
-| `EADDRINUSE :::8080` or `:5173` | A Local Play port is taken. Find the owner with `lsof -i :8080` on macOS or `Get-NetTCPConnection -LocalPort 8080` in PowerShell before killing; Local Play needs both the connection-runtime and Vite ports free |
+| `EADDRINUSE :::8080` or `:5173` | A Local Play port is taken. Find the owner with `lsof -i :8080` on macOS or `Get-NetTCPConnection -LocalPort 8080` in PowerShell before killing; without the Vite plugin, the config runtime and Vite use separate ports; with `@microsoft/power-apps-vite`, use the single dev-server port (see [runbook.md](runbook.md#local-play)) |
 | `Launch App failed with Http status code of 0` | Do not hand-build the Local Play URL from an old app id — open the URL the CLI prints |
 | Unexpected consent/login prompt | Often an UNUSED data source/connection still attached to the app (not the one you're building). Inventory used vs unused connections and remove the stragglers |
 

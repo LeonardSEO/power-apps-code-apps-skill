@@ -23,7 +23,11 @@ Start here:
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/overview
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/architecture
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/content-security-policy
-- https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/npm-quickstart
+- https://learn.microsoft.com/en-us/power-apps/developer/code-apps/reference/cli
+- https://learn.microsoft.com/en-us/power-apps/developer/code-apps/reference/environment-variables
+- https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/use-service-principal
+- https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-azure-sql
+- https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/create-an-app-from-scratch
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-data
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-dataverse
 - https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/add-dataverse-action-function
@@ -44,7 +48,7 @@ Start here:
 ## Search behavior
 - Use Microsoft Learn first for facts about commands, support, and limitations.
 - Use the newest Learn article available when two pages overlap.
-- If you must fall back to GitHub, blogs, or forum posts, label them as non-official.
+- Microsoft-owned GitHub repositories and published Microsoft packages are primary implementation sources; distinguish these from third-party blogs or forum posts.
 - If a feature is preview, say so explicitly.
 - Check `pa --help` and the relevant grouped subcommand help first when `pa` is available. If the project only has the flat `power-apps` CLI, check its live help and use the translation table in [runbook.md](runbook.md#cli-resolution-pa-preferred-power-apps-fallback).
 
@@ -52,7 +56,7 @@ Start here:
 
 Microsoft's `microsoft/power-platform-skills` Code Apps skills are a moving operational baseline. Do not copy them wholesale: compare them with this skill's stricter security, generated-service, Dataverse, and deployment rules.
 
-Last reviewed upstream `main`: `c1e101becac1e4df599365709bc1458bdfe03c72` on 2026-08-05.
+Last reviewed upstream `main`: `433a5fd` on 2026-09-15, covering all 15 `plugins/code-apps/skills` entrypoints and relevant shared/reference guidance. CLI contracts also checked against published `@microsoft/power-apps-cli` 1.0.1 help and Microsoft Learn; upstream skill examples still use older discovery groups and assume automatic CLI installation.
 
 For a maintenance review:
 

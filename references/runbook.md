@@ -4,8 +4,9 @@
 - Vite SPA
 - TypeScript
 - `@microsoft/power-apps`
-- npm CLI with grouped `pa` preferred and flat `power-apps` fallback
-- PAC CLI for auth, data-source operations, and compatibility paths
+- `@microsoft/power-apps-cli` for the grouped `pa` CLI; legacy flat `power-apps` only when already installed
+- `@microsoft/power-apps-vite` when the project uses its Vite plugin
+- PAC CLI for solution/environment/plugin operations and confirmed Code Apps compatibility gaps
 
 ## Preflight
 Before starting, collect:
@@ -54,13 +55,15 @@ if (Test-Path node_modules/.bin/pa.cmd) {
 }
 ```
 
-In this template, prefer the cross-platform `make code-*` targets; the probes
-above are for standalone skill use and troubleshooting.
+If the repository defines `make code-*` or equivalent package scripts, inspect and reuse them. This standalone skill does not supply those targets. In PowerShell, execute the corresponding resolved form, e.g. `npx --no-install pa app --help` when `$PaKind` is `pa`; translate verbs and flags when it is `power-apps`.
 
 - Prefer the project-local shim. A global official binary is an existing-tool
   fallback, not permission to install globally.
-- If `PA_KIND=none`, run the project's existing `npm install` and re-probe. Ask
-  before any global install.
+- If `PA_KIND=none`, inspect `package.json` and the lockfile, then choose exactly the matching case:
+  - CLI already declared: restore the declared dependencies using the repository's package manager when permitted, then re-probe.
+  - CLI absent from dependencies (including SDK 1.3.1-only projects): the next step is a project-local CLI dev dependency, `npm install --save-dev @microsoft/power-apps-cli`, subject to the user's dependency-change approval rules. Reinstalling the SDK is not a step in this case.
+  - Ask before any global install.
+- Package snapshot checked 2026-09-15: SDK `@microsoft/power-apps` 1.3.1 has no CLI dependency; CLI 1.0.1 requires Node >=22 and exports only `pa`. Older packages may export `power-apps`, or both. Select by actual installed binaries, not the SDK version alone.
 - Commands in this reference use canonical grouped `pa` syntax. Execute them as
   `"${PA[@]}" <noun> <verb> ...` when `PA_KIND=pa`. When only `power-apps` is
   available, translate both the verb path and renamed flags before execution.
@@ -78,10 +81,16 @@ above are for standalone skill use and troubleshooting.
 | Remove data source | `pa app remove data-source` | `power-apps delete-data-source` |
 | Find/add Dataverse API | `pa app find-dataverse-api` / `pa app add dataverse-api` | `power-apps find-dataverse-api` / `power-apps add-dataverse-api` |
 | List/add/remove flow | `pa app list-flows` / `pa app add flow` / `pa app remove flow` | `power-apps list-flows` / `power-apps add-flow` / `power-apps remove-flow` |
+| Connector catalog | `pa connector list` | `power-apps list-connectors` |
+| SQL procedures | `pa connection list-procedures` | `power-apps list-sqlStoredProcedures` |
 | Connections | `pa connection list` | `power-apps list-connections` |
 | Create connection | `pa connection create` | `power-apps create-connection` |
-| Datasets/tables | `pa connector list-datasets` / `pa connector list-tables` | `power-apps list-datasets` / `power-apps list-tables` |
+| Datasets/tables | `pa connection list-datasets` / `pa connection list-tables` | `power-apps list-datasets` / `power-apps list-tables` |
 | Auth | `pa auth login/status/switch/logout` | `power-apps login/auth-status/auth-switch/logout` |
+
+The grouped discovery paths above are verified for CLI 1.0.1. Older grouped versions used `pa connector list-datasets/list-tables/list-procedures`; use that form only if the installed help exposes it. `pa connection list-procedures` takes connection and dataset, not `--connector`.
+
+Flat mappings apply only to legacy versions that expose those commands. New operations such as sharing and solution discovery are not guaranteed to exist in a flat-only install; check its help instead of inventing a translation.
 
 Renamed selector flags:
 
@@ -90,6 +99,7 @@ Renamed selector flags:
 | Connector/API | `--connector` | `--api-id` / `-a` |
 | Table/resource | `--table` | `--resource-name` / `-t` |
 | Data-source name | `--name` | `--data-source-name` / `-n` |
+| SQL procedure to add | `--procedure` | `--sql-stored-procedure` / `-sp` |
 | Connection reference | `--connection-ref` | `--connection-ref` / `-cr` |
 
 Connection (`-c`), dataset (`-d`), environment (`-e`) and init display-name
@@ -100,16 +110,18 @@ form in generated instructions.
 Use the official Microsoft template first.
 
 ```bash
-npx degit github:microsoft/PowerAppsCodeApps/templates/vite my-app --force
+npx degit github:microsoft/PowerAppsCodeApps/templates/vite my-app
 cd my-app
 npm install
+# If the CLI is absent, arrange its project-local installation as described above.
+# Resolve PA before running the following canonical operations.
 pa app init --display-name "My Code App" --environment-id <environment-id>
-npm run dev
+pa app run
 ```
 
 Notes:
-- Use `--force` with degit to overwrite if the directory already has files.
-- Starting with `@microsoft/power-apps` v1.0.4, the npm CLI is the preferred path for `init`, `run`, and `push`.
+- Scaffold into a new directory; inspect an existing project before adding or replacing template files.
+- SDK v1.0.4 introduced the npm CLI route. Current releases separate SDK, CLI, and Vite plugin; preserve the project's compatible versions and check each package independently.
 - The `init` command opens a browser window for Microsoft sign-in on first run. Complete login and the command continues. No separate auth setup needed.
 - The environment ID is the GUID in the make.powerapps.com URL: `https://make.powerapps.com/environments/<env-id>/home`. If you omit `-e`, the CLI will prompt for it interactively.
 - Open the `Local Play` URL in the same browser profile as the Power Platform tenant.
@@ -140,16 +152,16 @@ Rules:
 - Re-run `npm run build` after dependency changes.
 
 ## Local Play
-Local Play needs the Vite frontend and Power Apps configuration together. The
-current grouped CLI starts the package's `dev` script itself:
+Inspect `package.json` and `vite.config.*` first; the current Microsoft template registers `powerApps()` from `@microsoft/power-apps-vite/plugin`.
 
-```bash
-pa app run --port 8080 --local-app-url http://localhost:5173
-```
+| Project configuration | Start path |
+|---|---|
+| Vite plugin registered | `npm run dev` serves app + Power Apps config and prints Local Play. `pa app run` can also launch the dev script and detect the plugin; choose one launcher. |
+| No Vite plugin; CLI manages dev script | `pa app run --port 8080 --local-app-url http://localhost:5173` |
+| No Vite plugin; dev server already managed separately | `pa app run --config-only --port 8080 --local-app-url http://localhost:5173` if installed help supports `--config-only` |
 
-- `--port` is the configuration runtime; `--local-app-url` points at the Vite
-  dev server — two different ports. Current `pa app run` starts the configured
-  package `dev` script; do not start a second Vite process.
+- Without the Vite plugin, `--port` is the separate config runtime and `--local-app-url` is the frontend URL. With the plugin, config and frontend are served together; do not require a second listener on 8080.
+- Use the actual dev-server port from project configuration/output. Do not start a second Vite process or make a `dev` script call `pa app run` recursively.
 - Let the CLI print the `Local Play` URL and open THAT. Do not hand-build a URL from an
   old app id — that yields `Launch App failed with Http status code of 0`.
 - Open it in the **same browser profile** as the Power Platform tenant. If it fails in
@@ -175,21 +187,24 @@ npm run build
 pac code push
 ```
 
-Push to a specific solution:
+Push to a specific solution with the current npm CLI:
 
 ```bash
-pac code push --solutionName <solutionName>
+pa solution list --search "<solution-name>" --json
+pa app push --solution-id <solution-guid>
 ```
+
+Build and obtain deployment authorization before push. The npm flag takes a **GUID**, not a display/unique name. Legacy PAC uses `pac code push --solutionName <solution-unique-name>`; retain it only for a confirmed compatibility requirement.
 
 ## ALM defaults
 - Work in a non-default solution.
-- Prefer a preferred solution or target `--solutionName`.
+- Prefer an explicit solution GUID with npm `--solution-id`; PAC `--solutionName` is a different, legacy selector.
 - Use connection references for portable Dev/Test/Prod deployments.
 - Use Power Platform Pipelines after the app is solution-aware.
 
 ## Multiple data sources
 When adding multiple connectors in sequence:
-- Run `npm run build` after each resolved data-source add/refresh operation to catch generated-contract errors early.
+- Inspect generated/config diffs after each add/refresh, then run the relevant build once after the coherent set of integrations is wired. Recheck earlier only to isolate an actual generator failure.
 - Do NOT deploy after each connector — deploy once after all connectors are wired.
 
 ## Cloud flows (npm CLI only)
@@ -246,11 +261,11 @@ pa app find-dataverse-api --search "<term>"
 
 # Discovery
 pa connection list
-pa connection list-references
+pa connection list-references --solution-id <solution-guid>
 pa app list-environment-variables
-pa connector list-datasets --connector <api> -c <conn-id>
-pa connector list-tables --connector <api> -c <conn-id> -d <dataset>
-pa connector list-procedures --connector <api> -c <conn-id> -d <dataset>
+pa connection list-datasets --connector <api> -c <conn-id>
+pa connection list-tables --connector <api> -c <conn-id> -d <dataset>
+pa connection list-procedures -c <conn-id> -d <dataset>
 
 # Connections, flows, auth
 pa connection create --connector <api> --display-name "<name>"   # preview; SSO vs browser varies
@@ -260,9 +275,41 @@ pa app remove flow --flow-id <id>
 pa auth login | status | switch | logout
 ```
 
-> Live CLI help can itself be inconsistent — e.g. `push --help` shows `--solution-id` while
-> the description/example use `--solution-name`. Verify a flag against the installed version;
-> never run a production `push` just to "test" a flag.
+> CLI 1.0.1 help consistently specifies `push --solution-id` as a GUID. Older examples used inconsistent solution flags. Check the installed version; never publish just to test a flag.
+
+## App sharing and service-principal publishing
+
+For an already-published app, a maker can grant app access:
+
+```bash
+pa app share --principal <user-email-or-entra-object-id> --access play
+pa app share --principal <enterprise-application-object-id> --access edit
+```
+
+Sharing changes permissions: use the requested principals/access and obtain authorization before executing. For service-principal updates, a maker grants `edit` once using the **Enterprise Application object ID**, not the App Registration object ID or client ID. The service principal also needs environment access and cannot grant itself app access. Do not put sharing in every CI run.
+
+Configure the publish job with `PA_CLI_USE_SP_AUTH=true`, `PA_CLI_SP_CLIENT_ID`, `PA_CLI_SP_TENANT_ID`, and `PA_CLI_SP_CLIENT_SECRET` injected from the CI secret store. Never put the secret in source, logs, prompts, or a browser bundle. `CI=true` also selects service-principal auth for compatibility; prefer the explicit flag. This is CLI publishing auth, separate from Dataverse backend application-user provisioning and end-user connector rights.
+
+After a successful build and deployment authorization:
+
+```bash
+pa app push --solution-id <solution-guid> --non-interactive
+```
+
+`PA_CLI_*` process variables configure the CLI; they are not Power Platform solution environment variables. Explicit command flags override their corresponding process variables. Verify the target environment from config/flags before publishing.
+
+Sources: [Service-principal publishing](https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/use-service-principal), [CLI environment variables](https://learn.microsoft.com/en-us/power-apps/developer/code-apps/reference/environment-variables).
+
+## App host settings
+
+CLI 1.0.1 supports these grouped commands (verify installed help):
+
+```bash
+pa app get-settings --json
+pa app set-setting --show-header false
+```
+
+Both require `power.config.json`; even `set-setting --help` checks for it in this version. `set-setting` changes local `appSettings`; the player receives the metadata on the next authorized push. It does not change environment CSP or backend/storage CORS. Older package READMEs show flat commands; use only commands exposed by the installed CLI. Reference: [official CLI package](https://www.npmjs.com/package/@microsoft/power-apps-cli).
 
 ## What not to do
 - Do not start from Next.js or another server-heavy stack unless you already know which parts are purely client-side.

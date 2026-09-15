@@ -25,10 +25,11 @@ It is designed for AI vibecoding workflows where the model needs to understand:
 - Dataverse provisioning, solution import, and Web API metadata fallback
 - Goal-based connector routing and practical SharePoint, Teams, Outlook, Excel, OneDrive, Azure DevOps, Work IQ, and Copilot Studio playbooks
 - Copilot Studio agent integration
+- SQL tables and stored procedures, connector discovery, and connection creation
+- App sharing, service-principal publishing, and host settings
 - Connection references and ALM
 - Backend patterns with Azure Functions, API Management, and custom connectors
 - Platform limitations and what not to do
-- Power Apps Code Apps plan, build, and review agent profiles
 
 ## Repository structure
 ```text
@@ -40,13 +41,10 @@ power-apps-code-apps-skill/
 │   └── openai.yaml
 └── references/
     ├── backend-security.md
-    ├── build-agent.md
     ├── data-access-contract.md
     ├── dataverse-provisioning.md
     ├── data-integrations.md
     ├── limitations-search.md
-    ├── plan-agent.md
-    ├── review-agent.md
     ├── runbook.md
     └── troubleshooting.md
 ```
