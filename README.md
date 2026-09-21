@@ -22,6 +22,7 @@ It is designed for AI vibecoding workflows where the model needs to understand:
 - Local Play and browser gotchas
 - CSP, CORS, white-screen, caching, and runtime-state troubleshooting
 - Dataverse integration, generated CRUD contracts, lookups, and file/image operations
+- Critical loading boundaries, lazy loading, targeted prefetching, and connector request waterfalls
 - Dataverse provisioning, solution import, and Web API metadata fallback
 - Goal-based connector routing and practical SharePoint, Teams, Outlook, Excel, OneDrive, Azure DevOps, Work IQ, and Copilot Studio playbooks
 - Copilot Studio agent integration
@@ -44,6 +45,7 @@ power-apps-code-apps-skill/
     ├── data-access-contract.md
     ├── dataverse-provisioning.md
     ├── data-integrations.md
+    ├── data-loading.md
     ├── limitations-search.md
     ├── runbook.md
     └── troubleshooting.md
