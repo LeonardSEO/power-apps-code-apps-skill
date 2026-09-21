@@ -1,8 +1,8 @@
 # Limitations and Search Rules
 
 ## Important limits and gotchas
-- **Node.js 22+ is required.** Current Code Apps tooling rejects Node 20 and earlier; verify the resolved CLI's live help and version.
-- **Connector-first is mandatory for Power Platform/Microsoft services.** Direct browser HTTP to a custom browser-facing backend is possible only after the CSP, CORS, auth, data-sensitivity, governance, and deployed-host checks in [backend-security.md](backend-security.md).
+- **Use a supported Node.js LTS release.** Node.js 22 is the current platform baseline; obey any stricter repository minimum and verify the resolved CLI's live help and version.
+- **Connector-first is mandatory for Power Platform/Microsoft services.** Direct browser HTTP to a custom browser-facing backend is possible only when repository architecture permits it and after the CSP, CORS, auth, data-sensitivity, governance, and deployed-host checks in [backend-security.md](backend-security.md).
 - Published code is hosted on a publicly accessible endpoint. Do not store sensitive user or organizational data in the app bundle.
 - Code Apps are not supported in the Power Apps mobile app or Power Apps for Windows.
 - Power BI integration through `PowerBIIntegration` is not supported, though embedding in Power BI reports through the Power Apps visual is possible.

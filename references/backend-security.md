@@ -10,6 +10,8 @@
 ## Direct HTTP calls
 Raw `fetch()` from the browser is technically possible because a Code App is still a browser SPA.
 
+Platform capability is not project authorization. Check the repository's canonical architecture first. If it forbids direct browser HTTP, that rule wins and this exception is unavailable; use a generated connector, custom connector, or approved backend integration instead.
+
 Do not treat that as the default architecture. Dataverse, Microsoft Graph, Microsoft 365, Azure management APIs, and services with a supported Power Platform connector must use generated connector services. A browser call is not a substitute for those connectors.
 
 Use direct browser HTTP to a custom backend only when all of the following are true and the decision is documented:

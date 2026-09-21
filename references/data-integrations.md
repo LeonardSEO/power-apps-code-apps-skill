@@ -10,21 +10,23 @@ Use generated connector services for Dataverse, Microsoft Graph, Microsoft 365, 
 | `axios.get("https://dev.azure.com/...")` | Use the Azure DevOps connector guidance below |
 | Any raw HTTP call to an M365/Azure service | Use a Power Platform connector |
 
-If no connector supports the required functionality, prefer a custom connector or a protected backend. A direct browser call to a custom backend is an exception, not a fallback shortcut: complete every CSP, CORS, auth, data-sensitivity, governance, and deployed-host check in [backend-security.md](backend-security.md) before implementing it.
+If no connector supports the required functionality, prefer a custom connector or a protected backend. A direct browser call to a custom backend is available only when the repository architecture permits it. It is an exception, not a fallback shortcut: complete every CSP, CORS, auth, data-sensitivity, governance, and deployed-host check in [backend-security.md](backend-security.md) before implementing it.
 
 ## Mental model
 Code Apps are connector-first. The usual path is:
 - find or create a connection in Power Apps,
 - get the connection ID with the resolved CLI,
 - add the data source to the code app,
-- import the generated model and service,
-- call the generated TypeScript methods.
+- import the generated model and service inside the repository-defined data-access boundary,
+- call the generated TypeScript methods from that boundary.
 
 Generated files land under:
 - `src/generated/models`
 - `src/generated/services`
 
 Do not edit those files by hand.
+
+The import snippets in this reference illustrate generated API shapes. Place them only where the repository's canonical architecture allows generated imports; do not copy them into components or feature services when the project reserves those imports for repository implementations.
 
 ## General connector flow
 Commands below use the current grouped `pa` syntax. Resolve the project-local CLI first and translate both the verb and flags when only the flat `power-apps` CLI is available; see [runbook.md](runbook.md#cli-resolution-pa-preferred-power-apps-fallback).

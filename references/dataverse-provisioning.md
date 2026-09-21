@@ -37,7 +37,7 @@ working CLI path even in a tenant that blocks device code entirely.
 Before adding Dataverse to a Code App, lock these decisions first:
 1. Is Dataverse the real runtime store, or only a target architecture?
 2. Which data belongs in Dataverse versus Blob Storage or another file store?
-3. Will the frontend use generated services directly, or will the backend own Dataverse access?
+3. Will the repository-defined client data-access layer use generated services, or will the backend own Dataverse access?
 4. Is schema deployment done by solution import, or by Web API metadata automation?
 
 Do not blur these decisions together. A project can have Dataverse enabled in the environment and a fully implemented Dataverse repository class, while runtime persistence still resolves to blob-backed or in-memory storage because a feature flag or repository-selection wiring resolved that way.
@@ -353,6 +353,8 @@ the Custom API already works functionally.
 
 ## Generated-service usage in the Code App
 Use the generated services instead of hand-rolled fetches when the Code App itself reads or writes Dataverse data.
+
+The following snippet documents the generated API shape. Put it inside the data-access layer allowed by the repository's canonical architecture; it is not permission to import generated services directly from a component or feature service.
 
 ```ts
 import { <Table>Service } from "./generated/services/<Table>Service";

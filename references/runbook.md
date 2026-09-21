@@ -10,7 +10,7 @@
 
 ## Preflight
 Before starting, collect:
-- Node.js 22+ installed (`node --version`)
+- A supported Node.js LTS release installed (`node --version`); Node.js 22 is the current platform baseline and a repository may require a newer minimum
 - environment id (GUID from the make.powerapps.com URL: `https://make.powerapps.com/environments/<env-id>/home`)
 - Dataverse enabled: yes or no
 - backend host

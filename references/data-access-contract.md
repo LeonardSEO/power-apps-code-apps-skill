@@ -2,8 +2,10 @@
 
 "Use the generated services" is not enough — this is the concrete contract for calling
 Dataverse, flows, file columns and connectors from app code. All of it lives behind
-`src/generated/**`; keep these calls inside a repository/service layer, never in components,
-and never hand-edit generated files.
+`src/generated/**`; keep these calls inside the repository-defined data-access boundary,
+never in components, and never hand-edit generated files. A generic project may call that
+boundary a repository or service layer. When canonical project docs reserve generated
+imports for repository implementations, feature services may not import them.
 
 ## Inspect the generated contract first
 

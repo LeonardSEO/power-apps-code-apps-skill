@@ -9,7 +9,7 @@
 
 ## Preflight checklist
 Collect these facts before building or debugging:
-- Node.js 22+ (`node --version` — required, v22 minimum)
+- A supported Node.js LTS release (`node --version` — Node.js 22 is the current platform baseline; obey any stricter repository minimum)
 - environment id (GUID from make.powerapps.com URL)
 - Code App id if it already exists
 - Dataverse enabled: yes or no
